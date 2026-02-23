@@ -3,558 +3,377 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5, user-scalable=yes">
-  <title>Absensi Karyawan (Cloud)</title>
+  <title>Absensi Online Karyawan PT BGME</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <!-- Firebase SDK -->
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore-compat.js"></script>
   <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-      font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
-    }
+    * { margin:0; padding:0; box-sizing:border-box; font-family:'Plus Jakarta Sans', system-ui, -apple-system, sans-serif; }
 
     :root {
-      --bg: #f4f7fb;
+      --bg: #f0f2f5;
       --surface: #ffffff;
-      --primary: #2563eb;
+      --primary: #1a56db;
       --primary-light: #3b82f6;
-      --success: #16a34a;
+      --primary-bg: #eff6ff;
+      --success: #059669;
+      --success-bg: #ecfdf5;
       --warning: #d97706;
+      --warning-bg: #fffbeb;
       --danger: #dc2626;
-      --text: #1f2937;
+      --danger-bg: #fef2f2;
+      --text: #111827;
       --text-secondary: #4b5563;
       --text-muted: #9ca3af;
       --border: #e5e7eb;
-      --card-shadow: 0 4px 12px rgba(0,0,0,0.05);
+      --card-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+      --hover-shadow: 0 4px 16px rgba(0,0,0,0.1);
     }
 
-    body {
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-    }
+    body { background: var(--bg); color: var(--text); min-height:100vh; display:flex; flex-direction:column; }
 
-    .top-bar {
-      background: var(--surface);
-      padding: 1rem 1.5rem;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.02);
-      display: flex;
-      flex-wrap: wrap;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .top-bar-left h1 {
-      font-size: 1.5rem;
-      font-weight: 600;
-      color: var(--primary);
-    }
-
-    .top-bar-left p {
-      color: var(--text-secondary);
-      font-size: 0.9rem;
-      margin-top: 2px;
-    }
-
-    .top-bar-right {
-      display: flex;
-      gap: 2rem;
-      align-items: center;
-      flex-wrap: wrap;
-    }
-
-    .live-clock {
-      background: var(--bg);
-      padding: 0.5rem 1rem;
-      border-radius: 40px;
-      font-size: 0.95rem;
-      font-weight: 500;
-      border: 1px solid var(--border);
-      display: flex;
-      gap: 0.5rem;
-    }
-
-    .live-clock span:first-child {
-      color: var(--primary);
-      font-weight: 600;
-    }
-
-    .admin-badge {
-      background: var(--primary);
-      color: white;
-      padding: 0.3rem 1rem;
-      border-radius: 30px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .logout-btn {
-      background: transparent;
-      border: 1px solid var(--danger);
-      color: var(--danger);
-      padding: 0.3rem 1rem;
-      border-radius: 30px;
-      font-size: 0.8rem;
-      font-weight: 600;
-      cursor: pointer;
-      transition: 0.2s;
-    }
-    .logout-btn:hover {
-      background: var(--danger);
-      color: white;
-    }
-
-    .nav-bar {
-      background: var(--surface);
-      padding: 0 1.5rem;
-      display: flex;
-      gap: 1.5rem;
-      border-bottom: 1px solid var(--border);
-      overflow-x: auto;
-      -webkit-overflow-scrolling: touch;
-    }
-    .nav-bar::-webkit-scrollbar { display: none; }
-
-    .nav-item {
-      padding: 0.9rem 0.25rem;
-      font-weight: 600;
-      color: var(--text-secondary);
-      border-bottom: 3px solid transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 1rem;
-      white-space: nowrap;
-    }
-    .nav-item.active {
-      color: var(--primary);
-      border-bottom-color: var(--primary);
-    }
-
-    .badge-absensi {
-      background: var(--primary-light);
-      color: white;
-      font-size: 0.7rem;
-      padding: 2px 8px;
-      border-radius: 30px;
-    }
-
-    .main-content {
-      flex: 1;
-      padding: 1.8rem 1.5rem;
-      max-width: 1400px;
-      margin: 0 auto;
-      width: 100%;
-    }
-
-    .section {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-    .section.active { display: block; }
-    @keyframes fadeIn {
-      from { opacity: 0.5; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(160px,1fr));
-      gap: 1.2rem;
-      margin-bottom: 2.2rem;
-    }
-    .stat-card {
-      background: var(--surface);
-      padding: 1.2rem 1rem;
-      border-radius: 20px;
-      border: 1px solid var(--border);
-    }
-    .stat-label {
-      font-size: 0.9rem;
-      color: var(--text-secondary);
-      margin-bottom: 6px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .stat-number {
-      font-size: 2.5rem;
-      font-weight: 700;
-    }
-
-    .table-responsive {
-      overflow-x: auto;
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      -webkit-overflow-scrolling: touch;
-    }
-    table {
-      width: 100%;
-      border-collapse: collapse;
-      font-size: 0.9rem;
-    }
-    th {
-      text-align: left;
-      padding: 1rem 1rem 0.8rem 1rem;
-      color: var(--text-muted);
-      font-weight: 500;
-      border-bottom: 1px solid var(--border);
-    }
-    td {
-      padding: 1rem;
-      border-bottom: 1px solid var(--border);
-      vertical-align: middle;
-    }
-    .td-muted { color: var(--text-muted); font-size: 0.85rem; }
-
-    .avatar {
-      width: 40px; height: 40px;
-      background: linear-gradient(145deg, #e0e7ff, #cbd5e1);
-      border-radius: 12px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-weight: 600;
-      color: #1e293b;
-      text-transform: uppercase;
-      flex-shrink: 0;
-    }
-
-    .badge {
-      padding: 4px 12px;
-      border-radius: 30px;
-      font-size: 0.75rem;
-      font-weight: 600;
-      display: inline-block;
-    }
-    .badge-success { background: #dcfce7; color: #166534; }
-    .badge-warning { background: #fef3c7; color: #92400e; }
-    .badge-muted { background: #f1f5f9; color: #334155; }
-
-    .pulse { animation: pulse 1.8s infinite; }
-    @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.5; } }
-
-    .absensi-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px,1fr));
-      gap: 1.5rem;
-    }
-    .absensi-card {
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      padding: 1.3rem;
-    }
-    .absensi-card-header {
-      display: flex;
-      gap: 0.8rem;
-      align-items: center;
-      margin-bottom: 1rem;
-    }
-    .absensi-name { font-weight: 700; font-size: 1.1rem; }
-    .absensi-jabatan { font-size: 0.8rem; color: var(--text-secondary); }
-    .absensi-times {
-      display: flex;
-      gap: 0.8rem;
-      margin: 1rem 0;
-    }
-    .time-box {
-      background: var(--bg);
-      flex: 1;
-      padding: 0.7rem;
-      border-radius: 16px;
-      text-align: center;
-    }
-    .time-box-label { font-size: 0.7rem; color: var(--text-muted); }
-    .time-box-value { font-weight: 700; font-size: 1.2rem; }
-    .time-box-value.empty { color: var(--text-muted); font-weight: 400; }
-
-    .absensi-location, .absensi-jobdesk {
-      background: var(--bg);
-      border-radius: 16px;
-      padding: 0.6rem 0.8rem;
-      margin: 0.6rem 0;
-      font-size: 0.85rem;
-      color: var(--text-secondary);
-      word-break: break-word;
-    }
-    .absensi-jobdesk-label { font-weight: 600; color: var(--text); margin-bottom: 4px; }
-
-    .absensi-actions { display: flex; margin-top: 1.2rem; }
-
-    .btn {
-      padding: 0.8rem 1.2rem;
-      min-height: 48px;
-      border-radius: 40px;
-      border: none;
-      font-weight: 600;
-      font-size: 1rem;
-      background: white;
-      border: 1px solid var(--border);
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      touch-action: manipulation;
-    }
-    .btn-success { background: var(--success); color: white; border: none; }
-    .btn-danger { background: var(--danger); color: white; border: none; }
-    .btn-outline { background: transparent; border: 1px solid var(--border); }
-    .btn-sm { padding: 0.5rem 1rem; min-height: 40px; font-size: 0.9rem; }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-
-    .karyawan-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(240px,1fr));
-      gap: 1rem;
-    }
-    .karyawan-card {
-      background: var(--surface);
-      border: 1px solid var(--border);
-      border-radius: 20px;
-      padding: 1.2rem;
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-    }
-    .karyawan-info { flex: 1; }
-    .karyawan-name { font-weight: 700; }
-    .karyawan-jabatan { font-size: 0.8rem; color: var(--text-secondary); }
-    .karyawan-id { font-size: 0.65rem; color: var(--text-muted); margin-top: 4px; }
-
-    .settings-card {
-      background: var(--surface);
-      border-radius: 24px;
-      border: 1px solid var(--border);
-      padding: 2rem;
-      max-width: 500px;
-      margin: 0 auto;
-    }
-    .settings-card h3 {
-      margin-bottom: 1.5rem;
-      color: var(--primary);
-    }
-    .time-input-group {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-      flex-wrap: wrap;
-    }
-    .time-input-group label {
-      min-width: 120px;
-      font-weight: 500;
-    }
-    .time-input-group input {
-      padding: 0.7rem 1rem;
-      border-radius: 30px;
-      border: 1px solid var(--border);
-      font-size: 1rem;
-      flex: 1;
-    }
-
-    .filter-bar {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 1rem;
-      align-items: center;
-      background: var(--surface);
-      padding: 1rem 1.2rem;
-      border-radius: 40px;
-      margin-bottom: 1.5rem;
-      border: 1px solid var(--border);
-    }
-    .filter-group {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-    }
-    .filter-group select, .filter-group input {
-      padding: 0.7rem 1rem;
-      border-radius: 30px;
-      border: 1px solid var(--border);
-      background: var(--bg);
-      font-size: 0.95rem;
-      min-height: 44px;
-    }
-    .rekap-count { margin-left: auto; font-size: 0.9rem; color: var(--text-muted); }
-
-    .empty-state {
-      text-align: center;
-      padding: 3rem 1rem;
-      background: var(--surface);
-      border-radius: 40px;
-      border: 1px dashed var(--border);
-    }
-    .empty-state-icon { font-size: 3.5rem; opacity: 0.5; }
-    .empty-state-title { font-weight: 700; font-size: 1.2rem; }
-    .empty-state-desc { color: var(--text-muted); margin-top: 0.5rem; }
-
-    .modal {
-      display: none;
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.3);
-      backdrop-filter: blur(5px);
-      align-items: center;
-      justify-content: center;
-      z-index: 1000;
-      padding: 1rem;
-    }
-    .modal.open { display: flex; }
-    .modal-content {
-      background: white;
-      max-width: 500px;
-      width: 100%;
-      border-radius: 40px;
-      padding: 2rem;
-      box-shadow: 0 30px 50px rgba(0,0,0,0.2);
-      animation: slideUp 0.3s;
-    }
-    @keyframes slideUp {
-      from { transform: scale(0.95) translateY(20px); opacity: 0; }
-      to { transform: scale(1) translateY(0); opacity: 1; }
-    }
-    .modal-header {
-      display: flex;
-      align-items: center;
-      gap: 1rem;
-      margin-bottom: 1.5rem;
-    }
-    .modal-header .avatar { width: 50px; height: 50px; font-size: 1.2rem; }
-    .modal-header h2 { font-size: 1.3rem; }
-    .form-group { margin-bottom: 1.2rem; }
-    .form-group label {
-      display: block; margin-bottom: 0.3rem; font-weight: 500; color: var(--text-secondary);
-    }
-    .form-group input, .form-group textarea {
-      width: 100%; padding: 0.8rem 1rem; border-radius: 30px; border: 1px solid var(--border); font-size: 1rem;
-    }
-    .location-status {
-      background: #f0f9ff; border-radius: 30px; padding: 0.8rem 1.2rem; margin: 1rem 0; font-size: 0.9rem;
-      border-left: 4px solid var(--primary);
-    }
-    .location-status.success { border-left-color: var(--success); }
-    .location-status.error { border-left-color: var(--danger); background: #fee2e2; }
-    .modal-footer {
-      display: flex; justify-content: flex-end; gap: 0.8rem; margin-top: 2rem;
-    }
-
+    /* ===== LOGIN PAGE ===== */
     .login-overlay {
-      position: fixed;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: var(--bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      z-index: 2000;
-      padding: 1.5rem;
+      position:fixed; top:0; left:0; width:100%; height:100%;
+      background: linear-gradient(135deg, #1e3a5f 0%, #1a56db 50%, #3b82f6 100%);
+      display:flex; align-items:center; justify-content:center; z-index:2000; padding:1.5rem;
     }
+    .login-wrapper { max-width:420px; width:100%; }
+    .login-brand {
+      text-align:center; margin-bottom:2rem; color:white;
+    }
+    .login-brand .brand-icon {
+      width:70px; height:70px; background:rgba(255,255,255,0.15); border-radius:20px;
+      display:inline-flex; align-items:center; justify-content:center; font-size:2rem;
+      margin-bottom:1rem; backdrop-filter:blur(10px); border:1px solid rgba(255,255,255,0.2);
+    }
+    .login-brand h1 { font-size:1.6rem; font-weight:800; letter-spacing:-0.5px; line-height:1.3; }
+    .login-brand p { font-size:0.9rem; opacity:0.8; margin-top:0.3rem; }
     .login-card {
-      background: var(--surface);
-      border-radius: 40px;
-      padding: 2rem;
-      max-width: 400px;
-      width: 100%;
-      box-shadow: var(--card-shadow);
-      border: 1px solid var(--border);
+      background:var(--surface); border-radius:24px; padding:2rem;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
     }
-    .login-card h2 {
-      text-align: center;
-      color: var(--primary);
-      margin-bottom: 0.5rem;
+    .login-tabs {
+      display:flex; gap:0; background:var(--bg); border-radius:14px; padding:4px; margin-bottom:1.8rem;
     }
-    .login-card p {
-      text-align: center;
-      color: var(--text-secondary);
-      margin-bottom: 2rem;
+    .login-tab {
+      flex:1; padding:0.7rem; text-align:center; border-radius:11px; font-weight:600;
+      font-size:0.9rem; cursor:pointer; color:var(--text-secondary); transition:all 0.2s;
     }
-    .login-card input {
-      width: 100%;
-      padding: 1rem;
-      border-radius: 60px;
-      border: 1px solid var(--border);
-      font-size: 1rem;
-      margin-bottom: 1.5rem;
+    .login-tab.active { background:white; color:var(--primary); box-shadow:0 2px 8px rgba(0,0,0,0.08); }
+    .login-section { display:none; }
+    .login-section.active { display:block; }
+    .login-field { margin-bottom:1.2rem; }
+    .login-field label { display:block; font-weight:600; font-size:0.85rem; color:var(--text-secondary); margin-bottom:0.4rem; }
+    .login-field input, .login-field select {
+      width:100%; padding:0.85rem 1rem; border-radius:14px; border:2px solid var(--border);
+      font-size:0.95rem; transition:border-color 0.2s; background:white;
     }
+    .login-field input:focus, .login-field select:focus { outline:none; border-color:var(--primary); }
     .login-btn {
-      width: 100%;
-      padding: 1rem;
-      border-radius: 60px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      font-weight: 700;
-      font-size: 1.1rem;
-      cursor: pointer;
+      width:100%; padding:0.95rem; border-radius:14px; background:var(--primary); color:white;
+      border:none; font-weight:700; font-size:1rem; cursor:pointer; transition:all 0.2s;
+      margin-top:0.5rem;
     }
-    .login-error {
-      color: var(--danger);
-      text-align: center;
-      margin-top: 1rem;
+    .login-btn:hover { background:#1e40af; transform:translateY(-1px); }
+    .login-btn:active { transform:translateY(0); }
+    .login-error { color:var(--danger); text-align:center; margin-top:0.8rem; font-size:0.9rem; font-weight:500; }
+    .login-info { background:var(--primary-bg); border-radius:12px; padding:0.8rem 1rem; margin-bottom:1.2rem; font-size:0.82rem; color:var(--primary); line-height:1.5; }
+
+    /* ===== TOP BAR ===== */
+    .top-bar {
+      background:var(--surface); padding:1rem 1.5rem;
+      box-shadow:0 2px 6px rgba(0,0,0,0.02);
+      display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:1rem;
+      border-bottom:1px solid var(--border);
+    }
+    .top-bar-left h1 { font-size:1.4rem; font-weight:700; color:var(--text); }
+    .top-bar-left p { color:var(--text-secondary); font-size:0.85rem; margin-top:2px; }
+    .top-bar-right { display:flex; gap:0.8rem; align-items:center; flex-wrap:wrap; }
+    .live-clock {
+      background:var(--bg); padding:0.45rem 1rem; border-radius:40px; font-size:0.9rem;
+      font-weight:500; border:1px solid var(--border); display:flex; gap:0.5rem;
+    }
+    .live-clock span:first-child { color:var(--primary); font-weight:700; }
+    .user-badge {
+      padding:0.35rem 1rem; border-radius:30px; font-size:0.8rem; font-weight:600;
+      display:flex; align-items:center; gap:6px;
+    }
+    .user-badge.admin { background:var(--primary); color:white; }
+    .user-badge.employee { background:var(--success-bg); color:var(--success); border:1px solid #bbf7d0; }
+    .logout-btn {
+      background:transparent; border:1px solid var(--danger); color:var(--danger);
+      padding:0.35rem 1rem; border-radius:30px; font-size:0.8rem; font-weight:600; cursor:pointer; transition:0.2s;
+    }
+    .logout-btn:hover { background:var(--danger); color:white; }
+
+    /* ===== NAVIGATION ===== */
+    .nav-bar {
+      background:var(--surface); padding:0 1.5rem; display:flex; gap:0.5rem;
+      border-bottom:1px solid var(--border); overflow-x:auto; -webkit-overflow-scrolling:touch;
+    }
+    .nav-bar::-webkit-scrollbar { display:none; }
+    .nav-item {
+      padding:0.85rem 0.6rem; font-weight:600; color:var(--text-muted); border-bottom:3px solid transparent;
+      cursor:pointer; display:flex; align-items:center; gap:6px; font-size:0.9rem; white-space:nowrap; transition:color 0.2s;
+    }
+    .nav-item:hover { color:var(--text-secondary); }
+    .nav-item.active { color:var(--primary); border-bottom-color:var(--primary); }
+    .badge-absensi {
+      background:var(--primary-light); color:white; font-size:0.7rem; padding:2px 8px; border-radius:30px;
     }
 
-    .toast-container {
-      position: fixed; bottom: 20px; right: 20px; z-index: 2000;
-      display: flex; flex-direction: column; gap: 10px;
+    /* ===== MAIN ===== */
+    .main-content { flex:1; padding:1.5rem; max-width:1400px; margin:0 auto; width:100%; }
+    .section { display:none; animation:fadeIn 0.25s ease; }
+    .section.active { display:block; }
+    @keyframes fadeIn { from{opacity:0.5;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+
+    /* Stats */
+    .stats-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:1rem; margin-bottom:2rem; }
+    .stat-card {
+      background:var(--surface); padding:1.2rem; border-radius:18px; border:1px solid var(--border);
+      transition:box-shadow 0.2s;
     }
+    .stat-card:hover { box-shadow:var(--hover-shadow); }
+    .stat-label { font-size:0.82rem; color:var(--text-secondary); margin-bottom:6px; display:flex; align-items:center; gap:6px; }
+    .stat-number { font-size:2.2rem; font-weight:800; letter-spacing:-1px; }
+
+    /* Tables */
+    .table-responsive {
+      overflow-x:auto; background:var(--surface); border-radius:18px; border:1px solid var(--border);
+      -webkit-overflow-scrolling:touch;
+    }
+    table { width:100%; border-collapse:collapse; font-size:0.88rem; }
+    th { text-align:left; padding:0.9rem 1rem; color:var(--text-muted); font-weight:500; font-size:0.8rem; text-transform:uppercase; letter-spacing:0.5px; border-bottom:1px solid var(--border); }
+    td { padding:0.9rem 1rem; border-bottom:1px solid var(--border); vertical-align:middle; }
+    .td-muted { color:var(--text-muted); font-size:0.82rem; }
+
+    /* Avatar */
+    .avatar {
+      width:40px; height:40px; background:linear-gradient(145deg,#dbeafe,#c7d2fe); border-radius:12px;
+      display:flex; align-items:center; justify-content:center; font-weight:700; color:#1e40af;
+      text-transform:uppercase; flex-shrink:0; font-size:0.85rem;
+    }
+
+    /* Badges */
+    .badge { padding:4px 12px; border-radius:30px; font-size:0.75rem; font-weight:600; display:inline-block; }
+    .badge-success { background:#dcfce7; color:#166534; }
+    .badge-warning { background:#fef3c7; color:#92400e; }
+    .badge-muted { background:#f1f5f9; color:#334155; }
+
+    .pulse { animation:pulse 1.8s infinite; }
+    @keyframes pulse { 0%{opacity:1} 50%{opacity:0.5} }
+
+    /* Absensi Cards */
+    .absensi-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(320px,1fr)); gap:1.2rem; }
+    .absensi-card { background:var(--surface); border-radius:20px; border:1px solid var(--border); padding:1.3rem; transition:box-shadow 0.2s; }
+    .absensi-card:hover { box-shadow:var(--hover-shadow); }
+    .absensi-card-header { display:flex; gap:0.8rem; align-items:center; margin-bottom:1rem; }
+    .absensi-name { font-weight:700; font-size:1.05rem; }
+    .absensi-jabatan { font-size:0.78rem; color:var(--text-secondary); }
+    .absensi-times { display:flex; gap:0.8rem; margin:1rem 0; }
+    .time-box { background:var(--bg); flex:1; padding:0.7rem; border-radius:14px; text-align:center; }
+    .time-box-label { font-size:0.7rem; color:var(--text-muted); font-weight:500; }
+    .time-box-value { font-weight:700; font-size:1.15rem; }
+    .time-box-value.empty { color:var(--text-muted); font-weight:400; }
+    .absensi-location,.absensi-jobdesk { background:var(--bg); border-radius:14px; padding:0.6rem 0.8rem; margin:0.6rem 0; font-size:0.82rem; color:var(--text-secondary); word-break:break-word; }
+    .absensi-jobdesk-label { font-weight:600; color:var(--text); margin-bottom:4px; }
+    .absensi-schedule-info { background:var(--primary-bg); border-radius:14px; padding:0.5rem 0.8rem; margin:0.6rem 0; font-size:0.78rem; color:var(--primary); font-weight:500; }
+    .absensi-actions { display:flex; margin-top:1rem; }
+
+    /* Buttons */
+    .btn {
+      padding:0.75rem 1.2rem; min-height:44px; border-radius:14px; border:none; font-weight:600;
+      font-size:0.9rem; background:white; border:1px solid var(--border); cursor:pointer;
+      display:inline-flex; align-items:center; justify-content:center; gap:8px; transition:all 0.2s;
+    }
+    .btn:hover { box-shadow:var(--hover-shadow); }
+    .btn-success { background:var(--success); color:white; border:none; }
+    .btn-success:hover { background:#047857; }
+    .btn-danger { background:var(--danger); color:white; border:none; }
+    .btn-danger:hover { background:#b91c1c; }
+    .btn-primary { background:var(--primary); color:white; border:none; }
+    .btn-primary:hover { background:#1e40af; }
+    .btn-outline { background:transparent; border:1px solid var(--border); }
+    .btn-sm { padding:0.5rem 1rem; min-height:38px; font-size:0.85rem; }
+    .btn:disabled { opacity:0.5; cursor:not-allowed; }
+
+    /* Karyawan Cards */
+    .karyawan-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(300px,1fr)); gap:1rem; }
+    .karyawan-card {
+      background:var(--surface); border:1px solid var(--border); border-radius:18px; padding:1.2rem;
+      display:flex; align-items:flex-start; gap:1rem; transition:box-shadow 0.2s;
+    }
+    .karyawan-card:hover { box-shadow:var(--hover-shadow); }
+    .karyawan-info { flex:1; }
+    .karyawan-name { font-weight:700; }
+    .karyawan-jabatan { font-size:0.8rem; color:var(--text-secondary); }
+    .karyawan-id { font-size:0.7rem; color:var(--text-muted); margin-top:2px; }
+    .karyawan-schedule { font-size:0.75rem; color:var(--primary); margin-top:4px; font-weight:500; }
+    .karyawan-cred { font-size:0.7rem; color:var(--text-muted); margin-top:2px; background:var(--bg); padding:4px 8px; border-radius:8px; display:inline-block; }
+    .karyawan-actions { display:flex; flex-direction:column; gap:4px; }
+
+    /* Settings */
+    .settings-container { max-width:800px; margin:0 auto; }
+    .settings-card {
+      background:var(--surface); border-radius:20px; border:1px solid var(--border); padding:1.8rem; margin-bottom:1.5rem;
+    }
+    .settings-card h3 { margin-bottom:1.2rem; color:var(--text); font-size:1.1rem; }
+    .settings-card h3 span { color:var(--primary); }
+    .time-input-group { display:flex; align-items:center; gap:1rem; margin-bottom:1.2rem; flex-wrap:wrap; }
+    .time-input-group label { min-width:130px; font-weight:500; font-size:0.9rem; }
+    .time-input-group input, .time-input-group select {
+      padding:0.65rem 1rem; border-radius:12px; border:1px solid var(--border); font-size:0.95rem; flex:1; min-width:100px;
+    }
+    .emp-schedule-list { display:flex; flex-direction:column; gap:0.8rem; }
+    .emp-schedule-item {
+      display:flex; align-items:center; gap:1rem; padding:1rem; background:var(--bg);
+      border-radius:14px; flex-wrap:wrap;
+    }
+    .emp-schedule-item .avatar { width:36px; height:36px; font-size:0.75rem; }
+    .emp-schedule-item .emp-info { flex:1; min-width:120px; }
+    .emp-schedule-item .emp-info .name { font-weight:600; font-size:0.9rem; }
+    .emp-schedule-item .emp-info .jabatan { font-size:0.75rem; color:var(--text-muted); }
+    .emp-schedule-item .schedule-inputs { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+    .emp-schedule-item .schedule-inputs input {
+      padding:0.5rem 0.6rem; border-radius:10px; border:1px solid var(--border); font-size:0.85rem; width:90px;
+    }
+    .emp-schedule-item .schedule-inputs label { font-size:0.75rem; color:var(--text-muted); font-weight:500; }
+
+    /* Filter */
+    .filter-bar {
+      display:flex; flex-wrap:wrap; gap:0.8rem; align-items:center; background:var(--surface);
+      padding:1rem 1.2rem; border-radius:16px; margin-bottom:1.2rem; border:1px solid var(--border);
+    }
+    .filter-group { display:flex; align-items:center; gap:0.4rem; flex-wrap:wrap; }
+    .filter-group label { font-size:0.82rem; font-weight:600; color:var(--text-secondary); }
+    .filter-group select,.filter-group input {
+      padding:0.6rem 0.8rem; border-radius:12px; border:1px solid var(--border); background:var(--bg);
+      font-size:0.88rem; min-height:40px;
+    }
+    .rekap-count { margin-left:auto; font-size:0.85rem; color:var(--text-muted); font-weight:500; }
+
+    /* Empty State */
+    .empty-state { text-align:center; padding:3rem 1rem; background:var(--surface); border-radius:20px; border:1px dashed var(--border); }
+    .empty-state-icon { font-size:3rem; opacity:0.5; }
+    .empty-state-title { font-weight:700; font-size:1.1rem; margin-top:0.5rem; }
+    .empty-state-desc { color:var(--text-muted); margin-top:0.4rem; font-size:0.9rem; }
+
+    /* Modals */
+    .modal {
+      display:none; position:fixed; top:0; left:0; width:100%; height:100%;
+      background:rgba(0,0,0,0.4); backdrop-filter:blur(6px);
+      align-items:center; justify-content:center; z-index:1000; padding:1rem;
+    }
+    .modal.open { display:flex; }
+    .modal-content {
+      background:white; max-width:500px; width:100%; border-radius:24px; padding:2rem;
+      box-shadow:0 30px 50px rgba(0,0,0,0.2); animation:slideUp 0.25s;
+    }
+    @keyframes slideUp { from{transform:scale(0.96) translateY(15px);opacity:0} to{transform:scale(1) translateY(0);opacity:1} }
+    .modal-header { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+    .modal-header .avatar { width:48px; height:48px; font-size:1.1rem; }
+    .modal-header h2 { font-size:1.2rem; font-weight:700; }
+    .form-group { margin-bottom:1.2rem; }
+    .form-group label { display:block; margin-bottom:0.3rem; font-weight:600; color:var(--text-secondary); font-size:0.85rem; }
+    .form-group input,.form-group textarea,.form-group select {
+      width:100%; padding:0.75rem 1rem; border-radius:14px; border:2px solid var(--border); font-size:0.95rem;
+      transition:border-color 0.2s;
+    }
+    .form-group input:focus,.form-group textarea:focus { outline:none; border-color:var(--primary); }
+    .location-status { background:#f0f9ff; border-radius:14px; padding:0.8rem 1rem; margin:1rem 0; font-size:0.88rem; border-left:4px solid var(--primary); }
+    .location-status.success { border-left-color:var(--success); }
+    .location-status.error { border-left-color:var(--danger); background:#fee2e2; }
+    .modal-footer { display:flex; justify-content:flex-end; gap:0.8rem; margin-top:1.5rem; }
+
+    /* Toast */
+    .toast-container { position:fixed; bottom:20px; right:20px; z-index:3000; display:flex; flex-direction:column; gap:10px; }
     .toast {
-      background: var(--surface); border-radius: 60px; padding: 0.8rem 1.5rem;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15); display: flex; align-items: center; gap: 12px;
-      font-weight: 500; border-left: 5px solid; animation: slideIn 0.2s; max-width: 350px;
+      background:var(--surface); border-radius:14px; padding:0.8rem 1.2rem;
+      box-shadow:0 8px 25px rgba(0,0,0,0.15); display:flex; align-items:center; gap:10px;
+      font-weight:500; border-left:4px solid; animation:slideIn 0.2s; max-width:350px; font-size:0.9rem;
     }
-    .toast.success { border-left-color: var(--success); }
-    .toast.error { border-left-color: var(--danger); }
-    .toast.warning { border-left-color: var(--warning); }
-    .toast.info { border-left-color: var(--primary); }
-    @keyframes slideIn {
-      from { transform: translateX(40px); opacity: 0; }
-      to { transform: translateX(0); opacity: 1; }
-    }
-    @keyframes fadeOut {
-      to { opacity: 0; transform: translateX(20px); }
+    .toast.success { border-left-color:var(--success); }
+    .toast.error { border-left-color:var(--danger); }
+    .toast.warning { border-left-color:var(--warning); }
+    .toast.info { border-left-color:var(--primary); }
+    @keyframes slideIn { from{transform:translateX(40px);opacity:0} to{transform:translateX(0);opacity:1} }
+    @keyframes fadeOut { to{opacity:0;transform:translateX(20px)} }
+
+    body:not(.admin-logged-in) .admin-only { display:none !important; }
+
+    /* Password toggle */
+    .password-wrapper { position:relative; }
+    .password-wrapper input { padding-right:3rem; }
+    .password-toggle {
+      position:absolute; right:12px; top:50%; transform:translateY(-50%); background:none; border:none;
+      cursor:pointer; font-size:1.1rem; color:var(--text-muted); padding:4px;
     }
 
-    body:not(.admin-logged-in) .admin-only {
-      display: none !important;
-    }
-
-    @media (max-width: 600px) {
-      .top-bar { flex-direction: column; align-items: stretch; }
-      .stats-grid { grid-template-columns: repeat(2,1fr); }
+    @media (max-width:600px) {
+      .top-bar { flex-direction:column; align-items:stretch; }
+      .stats-grid { grid-template-columns:repeat(2,1fr); }
+      .absensi-grid { grid-template-columns:1fr; }
+      .karyawan-grid { grid-template-columns:1fr; }
+      .emp-schedule-item { flex-direction:column; align-items:stretch; }
+      .emp-schedule-item .schedule-inputs { justify-content:flex-start; }
     }
   </style>
 </head>
 <body>
-  <!-- LOGIN OVERLAY -->
+  <!-- ===== LOGIN OVERLAY ===== -->
   <div id="loginOverlay" class="login-overlay">
-    <div class="login-card">
-      <h2>🔐 Admin HRD</h2>
-      <p>Masukkan password untuk mengelola data</p>
-      <input type="password" id="passwordInput" placeholder="Password" autofocus>
-      <button class="login-btn" id="loginBtn">Masuk sebagai Admin</button>
-      <div id="loginError" class="login-error"></div>
-      <div style="text-align:center; margin-top:1.5rem; font-size:0.9rem; color:var(--text-muted)">
-        Karyawan biasa lanjut tanpa login → <br>
-        <button class="btn btn-outline btn-sm" id="skipLoginBtn" style="margin-top:0.8rem;">Akses Terbatas</button>
+    <div class="login-wrapper">
+      <div class="login-brand">
+        <div class="brand-icon">📋</div>
+        <h1>Absensi Online Karyawan<br>PT BGME</h1>
+        <p>Sistem Absensi Digital</p>
+      </div>
+      <div class="login-card">
+        <div class="login-tabs">
+          <div class="login-tab active" data-tab="employee" onclick="App.switchLoginTab('employee')">👤 Karyawan</div>
+          <div class="login-tab" data-tab="admin" onclick="App.switchLoginTab('admin')">👑 Admin</div>
+        </div>
+
+        <!-- Employee Login -->
+        <div id="login-employee" class="login-section active">
+          <div class="login-info">ℹ️ Gunakan Username dan Password yang diberikan oleh Admin HRD.</div>
+          <div class="login-field">
+            <label>Username</label>
+            <input type="text" id="empUsername" placeholder="Masukkan username" autocomplete="username">
+          </div>
+          <div class="login-field">
+            <label>Password</label>
+            <div class="password-wrapper">
+              <input type="password" id="empPassword" placeholder="Masukkan password" autocomplete="current-password">
+              <button type="button" class="password-toggle" onclick="App.togglePassword('empPassword',this)">👁</button>
+            </div>
+          </div>
+          <button class="login-btn" id="empLoginBtn">Masuk</button>
+          <div id="empLoginError" class="login-error"></div>
+        </div>
+
+        <!-- Admin Login -->
+        <div id="login-admin" class="login-section">
+          <div class="login-info">🔐 Akses khusus untuk Admin HRD untuk mengelola data karyawan dan absensi.</div>
+          <div class="login-field">
+            <label>Password Admin</label>
+            <div class="password-wrapper">
+              <input type="password" id="adminPassword" placeholder="Masukkan password admin" autocomplete="current-password">
+              <button type="button" class="password-toggle" onclick="App.togglePassword('adminPassword',this)">👁</button>
+            </div>
+          </div>
+          <button class="login-btn" id="adminLoginBtn">Masuk sebagai Admin</button>
+          <div id="adminLoginError" class="login-error"></div>
+        </div>
       </div>
     </div>
   </div>
 
-  <!-- TOP BAR -->
+  <!-- ===== TOP BAR ===== -->
   <header class="top-bar">
     <div class="top-bar-left">
       <h1 id="topbar-title">📊 Dashboard</h1>
@@ -563,16 +382,14 @@
     <div class="top-bar-right">
       <div class="live-clock">
         <span id="live-time">--:--:--</span>
-        <span id="live-date">---, -- --- ----</span>
+        <span id="live-date">---</span>
       </div>
-      <div id="adminPanel" style="display: none; align-items:center; gap:10px;">
-        <span class="admin-badge">👑 Admin</span>
-        <span class="logout-btn" id="logoutBtn">Logout</span>
-      </div>
+      <div id="userBadge" class="user-badge admin" style="display:none;">👑 Admin</div>
+      <button class="logout-btn" id="logoutBtn" style="display:none;">Logout</button>
     </div>
   </header>
 
-  <!-- NAVIGASI -->
+  <!-- ===== NAVIGATION ===== -->
   <nav class="nav-bar">
     <div class="nav-item active" data-nav="dashboard">🏠 Dashboard</div>
     <div class="nav-item" data-nav="absensi">
@@ -581,23 +398,24 @@
     </div>
     <div class="nav-item admin-only" data-nav="karyawan">👥 Karyawan</div>
     <div class="nav-item admin-only" data-nav="rekap">📋 Rekap</div>
-    <div class="nav-item admin-only" data-nav="settings">⚙️ Jam Kerja</div>
+    <div class="nav-item admin-only" data-nav="settings">⚙️ Pengaturan</div>
   </nav>
 
-  <!-- MAIN CONTENT -->
+  <!-- ===== MAIN CONTENT ===== -->
   <main class="main-content">
     <!-- DASHBOARD -->
     <section id="section-dashboard" class="section active">
       <div class="stats-grid">
         <div class="stat-card"><div class="stat-label">👥 Total Karyawan</div><div class="stat-number" id="stat-total">0</div></div>
-        <div class="stat-card"><div class="stat-label">✅ Hadir Hari Ini</div><div class="stat-number" id="stat-hadir">0</div></div>
+        <div class="stat-card"><div class="stat-label">✅ Hadir</div><div class="stat-number" id="stat-hadir">0</div></div>
         <div class="stat-card"><div class="stat-label">⏱️ Tepat Waktu</div><div class="stat-number" id="stat-tepat">0</div></div>
         <div class="stat-card"><div class="stat-label">⚠️ Terlambat</div><div class="stat-number" id="stat-terlambat">0</div></div>
         <div class="stat-card"><div class="stat-label">⏳ Belum Absen</div><div class="stat-number" id="stat-belum">0</div></div>
       </div>
-      <h3 style="margin-bottom:1rem;">📋 Absensi Hari Ini</h3>
+      <h3 style="margin-bottom:1rem;font-weight:700;">📋 Absensi Hari Ini</h3>
       <div class="table-responsive">
-        <table><thead><tr><th>Karyawan</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Status</th></tr></thead><tbody id="dashboard-today-body"></tbody></table>
+        <table><thead><tr><th>Karyawan</th><th>Jam Kerja</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Status</th></tr></thead>
+        <tbody id="dashboard-today-body"></tbody></table>
       </div>
     </section>
 
@@ -606,9 +424,9 @@
       <div class="absensi-grid" id="absensi-grid"></div>
     </section>
 
-    <!-- KARYAWAN (admin only) -->
+    <!-- KARYAWAN (admin) -->
     <section id="section-karyawan" class="section">
-      <div style="margin-bottom:1.5rem; display:flex; justify-content:flex-end;">
+      <div style="margin-bottom:1.5rem;display:flex;justify-content:flex-end;">
         <button class="btn btn-success" onclick="App.openAddKaryawan()">
           <span>➕</span> Tambah Karyawan
         </button>
@@ -616,45 +434,65 @@
       <div class="karyawan-grid" id="karyawan-grid"></div>
     </section>
 
-    <!-- REKAP (admin only) -->
+    <!-- REKAP (admin) -->
     <section id="section-rekap" class="section">
       <div class="filter-bar">
         <div class="filter-group"><label>Karyawan</label><select id="filter-emp" onchange="App.renderRekap()"><option value="">Semua</option></select></div>
         <div class="filter-group"><label>Tanggal</label><input type="date" id="filter-date" onchange="App.renderRekap()"></div>
         <div class="filter-group"><label>Status</label><select id="filter-status" onchange="App.renderRekap()"><option value="">Semua</option><option value="tepat">Tepat Waktu</option><option value="terlambat">Terlambat</option><option value="belum">Belum Absen</option></select></div>
         <span class="rekap-count" id="rekap-count">0 data</span>
-        <button class="btn btn-outline btn-sm" onclick="App.exportCSV()"><span>📎</span> Export CSV</button>
+        <button class="btn btn-outline btn-sm" onclick="App.exportCSV()">📎 Export CSV</button>
       </div>
       <div class="table-responsive">
-        <table><thead><tr><th>Karyawan</th><th>Tanggal</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Lokasi</th><th>Jobdesk</th><th>Status</th></tr></thead><tbody id="rekap-body"></tbody></table>
+        <table><thead><tr><th>Karyawan</th><th>Tanggal</th><th>Jam Kerja</th><th>Clock In</th><th>Clock Out</th><th>Durasi</th><th>Lokasi</th><th>Jobdesk</th><th>Status</th></tr></thead>
+        <tbody id="rekap-body"></tbody></table>
       </div>
     </section>
 
-    <!-- SETTINGS JAM KERJA (admin only) -->
+    <!-- SETTINGS (admin) -->
     <section id="section-settings" class="section">
-      <div class="settings-card">
-        <h3>⚙️ Pengaturan Jam Kerja</h3>
-        <div class="time-input-group">
-          <label>Jam Masuk:</label>
-          <input type="time" id="workStart" value="09:00">
+      <div class="settings-container">
+        <!-- Global default -->
+        <div class="settings-card">
+          <h3>🕐 <span>Jam Kerja Default</span></h3>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.2rem;">Berlaku untuk karyawan yang belum diatur jam kerjanya secara individual.</p>
+          <div class="time-input-group">
+            <label>Jam Masuk:</label>
+            <input type="time" id="workStart" value="09:00">
+          </div>
+          <div class="time-input-group">
+            <label>Jam Pulang:</label>
+            <input type="time" id="workEnd" value="17:00">
+          </div>
+          <div class="time-input-group">
+            <label>Toleransi (menit):</label>
+            <input type="number" id="lateTolerance" value="0" min="0" max="120">
+          </div>
+          <button class="btn btn-primary" onclick="App.saveGlobalSettings()">💾 Simpan Default</button>
         </div>
-        <div class="time-input-group">
-          <label>Jam Pulang:</label>
-          <input type="time" id="workEnd" value="17:00">
+
+        <!-- Per-employee schedule -->
+        <div class="settings-card">
+          <h3>👤 <span>Jam Kerja Per Karyawan</span></h3>
+          <p style="color:var(--text-muted);font-size:0.85rem;margin-bottom:1.2rem;">Atur jam masuk dan pulang yang berbeda untuk setiap karyawan. Kosongkan untuk menggunakan jam kerja default.</p>
+          <div class="emp-schedule-list" id="emp-schedule-list"></div>
+          <button class="btn btn-primary" style="margin-top:1.2rem;" onclick="App.saveAllSchedules()">💾 Simpan Semua Jam Kerja</button>
         </div>
-        <div class="time-input-group">
-          <label>Toleransi (menit):</label>
-          <input type="number" id="lateTolerance" value="0" min="0" max="120">
+
+        <!-- Admin password -->
+        <div class="settings-card">
+          <h3>🔐 <span>Ubah Password Admin</span></h3>
+          <div class="time-input-group">
+            <label>Password Baru:</label>
+            <input type="password" id="newAdminPassword" placeholder="Min 4 karakter">
+          </div>
+          <button class="btn btn-primary" onclick="App.changeAdminPassword()">💾 Ubah Password</button>
         </div>
-        <p style="color: var(--text-muted); font-size:0.9rem; margin-bottom:1.5rem;">
-          Karyawan yang clock in setelah jam masuk + toleransi akan dianggap terlambat.
-        </p>
-        <button class="btn btn-success" onclick="App.saveSettings()">Simpan Pengaturan</button>
       </div>
     </section>
   </main>
 
-  <!-- MODAL CLOCK IN -->
+  <!-- ===== MODAL CLOCK IN ===== -->
   <div id="modal-clockin" class="modal">
     <div class="modal-content">
       <div class="modal-header">
@@ -664,120 +502,192 @@
           <p style="color:var(--text-secondary);" id="modal-clockin-jabatan">Jabatan</p>
         </div>
       </div>
-      <div class="modal-body">
-        <input type="hidden" id="clockin-emp-id">
-        <div class="form-group">
-          <label>📋 Jobdesk Hari Ini</label>
-          <textarea id="clockin-jobdesk" rows="2" placeholder="Contoh: Meeting, coding..."></textarea>
-        </div>
-        <div id="location-status" class="location-status loading">📡 Mengambil lokasi GPS...</div>
+      <input type="hidden" id="clockin-emp-id">
+      <div class="form-group">
+        <label>📋 Jobdesk Hari Ini</label>
+        <textarea id="clockin-jobdesk" rows="2" placeholder="Contoh: Meeting, input data, survey..."></textarea>
       </div>
+      <div id="location-status" class="location-status">📡 Mengambil lokasi GPS...</div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal('modal-clockin')">Batal</button>
-        <button class="btn btn-success" onclick="App.confirmClockIn()">Clock In</button>
+        <button class="btn btn-success" onclick="App.confirmClockIn()">✅ Clock In</button>
       </div>
     </div>
   </div>
 
-  <!-- MODAL KARYAWAN (Tambah) -->
+  <!-- ===== MODAL TAMBAH KARYAWAN ===== -->
   <div id="modal-karyawan" class="modal">
     <div class="modal-content">
-      <h3 style="margin-bottom:1.5rem;">➕ Tambah Karyawan</h3>
+      <h3 style="margin-bottom:1.5rem;font-weight:700;">➕ Tambah Karyawan Baru</h3>
       <div class="form-group">
         <label>Nama Lengkap</label>
-        <input type="text" id="karyawan-name" placeholder="Contoh: Andi Setiawan">
+        <input type="text" id="karyawan-name" placeholder="Contoh: Ahmad Fauzi">
       </div>
       <div class="form-group">
         <label>Jabatan</label>
         <input type="text" id="karyawan-jabatan" placeholder="Contoh: Staff IT">
       </div>
+      <div class="form-group">
+        <label>Username Login</label>
+        <input type="text" id="karyawan-username" placeholder="Contoh: ahmad.fauzi">
+      </div>
+      <div class="form-group">
+        <label>Password Login</label>
+        <input type="text" id="karyawan-password" placeholder="Min 4 karakter">
+      </div>
+      <div class="form-group">
+        <label>Jam Masuk (opsional, kosongkan untuk default)</label>
+        <input type="time" id="karyawan-workstart">
+      </div>
+      <div class="form-group">
+        <label>Jam Pulang (opsional)</label>
+        <input type="time" id="karyawan-workend">
+      </div>
       <div class="modal-footer">
         <button class="btn btn-outline" onclick="App.closeModal('modal-karyawan')">Batal</button>
-        <button class="btn btn-success" onclick="App.saveKaryawan()">Simpan</button>
+        <button class="btn btn-success" onclick="App.saveKaryawan()">💾 Simpan</button>
       </div>
     </div>
   </div>
 
-  <!-- TOAST CONTAINER -->
+  <!-- ===== MODAL EDIT KARYAWAN ===== -->
+  <div id="modal-edit-karyawan" class="modal">
+    <div class="modal-content">
+      <h3 style="margin-bottom:1.5rem;font-weight:700;">✏️ Edit Karyawan</h3>
+      <input type="hidden" id="edit-emp-id">
+      <div class="form-group">
+        <label>Nama Lengkap</label>
+        <input type="text" id="edit-karyawan-name">
+      </div>
+      <div class="form-group">
+        <label>Jabatan</label>
+        <input type="text" id="edit-karyawan-jabatan">
+      </div>
+      <div class="form-group">
+        <label>Username Login</label>
+        <input type="text" id="edit-karyawan-username">
+      </div>
+      <div class="form-group">
+        <label>Password Baru (kosongkan jika tidak diubah)</label>
+        <input type="text" id="edit-karyawan-password" placeholder="Kosongkan jika tidak diubah">
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" onclick="App.closeModal('modal-edit-karyawan')">Batal</button>
+        <button class="btn btn-primary" onclick="App.updateKaryawan()">💾 Update</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOAST -->
   <div id="toast-container" class="toast-container"></div>
 
   <script>
-    // ===== KONFIGURASI FIREBASE =====
-    // GANTI DENGAN KONFIGURASI PROJECT FIREBASE ANDA!
+    // ===== FIREBASE CONFIG =====
     const firebaseConfig = {
-      apiKey: "AIzaSy...", // GANTI
-      authDomain: "your-project.firebaseapp.com", // GANTI
-      projectId: "your-project", // GANTI
-      storageBucket: "your-project.appspot.com", // GANTI
-      messagingSenderId: "123456", // GANTI
-      appId: "1:123456:web:abc123" // GANTI
+      apiKey: "AIzaSyBiabmqGIDieI0sYNtu2ZYJqk756BUaltI",
+      authDomain: "absenonlinebgme2026.firebaseapp.com",
+      projectId: "absenonlinebgme2026",
+      storageBucket: "absenonlinebgme2026.firebasestorage.app",
+      messagingSenderId: "346292746618",
+      appId: "1:346292746618:web:98d3315282e6bf66713ec3",
+      measurementId: "G-66ZK1EFXRP"
     };
-
-    // Inisialisasi Firebase
     firebase.initializeApp(firebaseConfig);
     const db = firebase.firestore();
 
-    // ===== APP =====
+    // ===== MAIN APP =====
     const App = {
       employees: [],
       attendance: [],
-      settings: { workStart: '09:00', workEnd: '17:00', lateTolerance: 0 },
+      settings: { workStart:'09:00', workEnd:'17:00', lateTolerance:0 },
       currentSection: 'dashboard',
       isAdmin: false,
-      ADMIN_PASSWORD: 'admin123', // bisa diubah
+      loggedInEmployee: null, // {id, name, ...}
+      adminPasswordHash: null,
 
+      // ===== INIT =====
       async init() {
-        const savedAdmin = localStorage.getItem('absensi_admin') === 'true';
-        if (savedAdmin) {
-          this.isAdmin = true;
-          document.body.classList.add('admin-logged-in');
-          document.getElementById('adminPanel').style.display = 'flex';
-          this.hideLogin();
-        } else {
+        await this.loadFromFirestore();
+        this.renderNav();
+        this.startClock();
+
+        // Check saved session
+        const savedSession = localStorage.getItem('absensi_session');
+        if (savedSession) {
+          try {
+            const session = JSON.parse(savedSession);
+            if (session.type === 'admin') {
+              this.isAdmin = true;
+              document.body.classList.add('admin-logged-in');
+              this.hideLogin();
+              this.showUserBadge('admin');
+            } else if (session.type === 'employee') {
+              const emp = this.employees.find(e => e.id === session.empId);
+              if (emp) {
+                this.loggedInEmployee = emp;
+                this.hideLogin();
+                this.showUserBadge('employee', emp.name);
+              } else {
+                localStorage.removeItem('absensi_session');
+              }
+            }
+          } catch { localStorage.removeItem('absensi_session'); }
+        }
+
+        if (!this.isAdmin && !this.loggedInEmployee) {
           document.getElementById('loginOverlay').style.display = 'flex';
         }
 
-        await this.loadFromFirestore();
+        this.renderAll();
+        this.bindEvents();
+      },
 
-        this.renderNav();
-        this.startClock();
+      bindEvents() {
+        document.getElementById('empLoginBtn').addEventListener('click', () => this.loginEmployee());
+        document.getElementById('adminLoginBtn').addEventListener('click', () => this.loginAdmin());
+        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
+        document.getElementById('empPassword').addEventListener('keypress', e => { if(e.key==='Enter') this.loginEmployee(); });
+        document.getElementById('empUsername').addEventListener('keypress', e => { if(e.key==='Enter') this.loginEmployee(); });
+        document.getElementById('adminPassword').addEventListener('keypress', e => { if(e.key==='Enter') this.loginAdmin(); });
+      },
+
+      renderAll() {
         this.renderDashboard();
         this.renderAbsensi();
+        this.updateNavBadge();
         if (this.isAdmin) {
           this.renderKaryawan();
           this.renderRekap();
           this.renderSettings();
         }
-        this.updateNavBadge();
-
-        document.getElementById('loginBtn').addEventListener('click', () => this.login());
-        document.getElementById('skipLoginBtn').addEventListener('click', () => this.skipLogin());
-        document.getElementById('logoutBtn').addEventListener('click', () => this.logout());
-        document.getElementById('passwordInput').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.login(); });
-
-        document.getElementById('filter-emp')?.addEventListener('change', () => this.renderRekap());
-        document.getElementById('filter-date')?.addEventListener('change', () => this.renderRekap());
-        document.getElementById('filter-status')?.addEventListener('change', () => this.renderRekap());
       },
 
+      // ===== FIRESTORE =====
       async loadFromFirestore() {
         try {
           const empSnapshot = await db.collection('employees').get();
-          this.employees = empSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          this.employees = empSnapshot.docs.map(doc => ({ id:doc.id, ...doc.data() }));
 
           const attSnapshot = await db.collection('attendance').get();
-          this.attendance = attSnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+          this.attendance = attSnapshot.docs.map(doc => ({ id:doc.id, ...doc.data() }));
 
           const settingsDoc = await db.collection('settings').doc('global').get();
           if (settingsDoc.exists) {
-            this.settings = settingsDoc.data();
+            const data = settingsDoc.data();
+            this.settings = {
+              workStart: data.workStart || '09:00',
+              workEnd: data.workEnd || '17:00',
+              lateTolerance: data.lateTolerance || 0
+            };
+            if (data.adminPassword) this.adminPasswordHash = data.adminPassword;
           } else {
-            this.settings = { workStart: '09:00', workEnd: '17:00', lateTolerance: 0 };
-            await db.collection('settings').doc('global').set(this.settings);
+            this.settings = { workStart:'09:00', workEnd:'17:00', lateTolerance:0 };
+            await db.collection('settings').doc('global').set({ ...this.settings, adminPassword:'admin123' });
+            this.adminPasswordHash = 'admin123';
           }
-        } catch (error) {
-          console.error("Gagal load data:", error);
-          this.showToast('Gagal mengambil data dari server', 'error');
+        } catch(err) {
+          console.error("Load error:", err);
+          this.showToast('Gagal mengambil data dari server','error');
         }
       },
 
@@ -785,114 +695,153 @@
         await db.collection('employees').doc(emp.id).set(emp);
         this.employees.push(emp);
       },
-
       async updateEmployee(empId, data) {
         await db.collection('employees').doc(empId).update(data);
-        const index = this.employees.findIndex(e => e.id === empId);
-        if (index !== -1) this.employees[index] = { ...this.employees[index], ...data };
+        const i = this.employees.findIndex(e=>e.id===empId);
+        if (i!==-1) this.employees[i] = { ...this.employees[i], ...data };
       },
-
       async deleteEmployee(empId) {
         await db.collection('employees').doc(empId).delete();
-        this.employees = this.employees.filter(e => e.id !== empId);
-        const attToDelete = this.attendance.filter(a => a.employeeId === empId).map(a => a.id);
-        for (let id of attToDelete) {
-          await db.collection('attendance').doc(id).delete();
-        }
-        this.attendance = this.attendance.filter(a => a.employeeId !== empId);
+        this.employees = this.employees.filter(e=>e.id!==empId);
+        const attDel = this.attendance.filter(a=>a.employeeId===empId).map(a=>a.id);
+        for (let id of attDel) await db.collection('attendance').doc(id).delete();
+        this.attendance = this.attendance.filter(a=>a.employeeId!==empId);
       },
-
       async saveAttendance(record) {
         await db.collection('attendance').doc(record.id).set(record);
         this.attendance.push(record);
       },
-
       async updateAttendance(recordId, data) {
         await db.collection('attendance').doc(recordId).update(data);
-        const index = this.attendance.findIndex(a => a.id === recordId);
-        if (index !== -1) this.attendance[index] = { ...this.attendance[index], ...data };
+        const i = this.attendance.findIndex(a=>a.id===recordId);
+        if (i!==-1) this.attendance[i] = { ...this.attendance[i], ...data };
+      },
+      async saveSettingsToFirestore(settings) {
+        await db.collection('settings').doc('global').set(settings, { merge:true });
+        Object.assign(this.settings, settings);
       },
 
-      async saveSettings(settings) {
-        await db.collection('settings').doc('global').set(settings);
-        this.settings = settings;
+      // ===== LOGIN / AUTH =====
+      switchLoginTab(tab) {
+        document.querySelectorAll('.login-tab').forEach(t => t.classList.toggle('active', t.dataset.tab===tab));
+        document.querySelectorAll('.login-section').forEach(s => s.classList.remove('active'));
+        document.getElementById('login-'+tab).classList.add('active');
+        // Clear errors
+        document.getElementById('empLoginError').textContent = '';
+        document.getElementById('adminLoginError').textContent = '';
       },
 
-      login() {
-        const pwd = document.getElementById('passwordInput').value;
-        if (pwd === this.ADMIN_PASSWORD) {
-          this.isAdmin = true;
-          localStorage.setItem('absensi_admin', 'true');
-          document.body.classList.add('admin-logged-in');
-          document.getElementById('adminPanel').style.display = 'flex';
-          this.hideLogin();
-          this.showToast('👑 Admin mode aktif', 'success');
-          this.renderKaryawan();
-          this.renderRekap();
-          this.renderSettings();
-          if (this.currentSection === 'karyawan' || this.currentSection === 'rekap' || this.currentSection === 'settings') {
-            this.navigate(this.currentSection);
-          }
-        } else {
-          document.getElementById('loginError').innerText = 'Password salah!';
+      togglePassword(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (input.type === 'password') { input.type = 'text'; btn.textContent = '🙈'; }
+        else { input.type = 'password'; btn.textContent = '👁'; }
+      },
+
+      loginEmployee() {
+        const username = document.getElementById('empUsername').value.trim().toLowerCase();
+        const password = document.getElementById('empPassword').value;
+        if (!username || !password) {
+          document.getElementById('empLoginError').textContent = 'Username dan password harus diisi!';
+          return;
         }
+        const emp = this.employees.find(e =>
+          (e.username || '').toLowerCase() === username && e.password === password
+        );
+        if (!emp) {
+          document.getElementById('empLoginError').textContent = 'Username atau password salah!';
+          return;
+        }
+        this.loggedInEmployee = emp;
+        this.isAdmin = false;
+        document.body.classList.remove('admin-logged-in');
+        localStorage.setItem('absensi_session', JSON.stringify({ type:'employee', empId:emp.id }));
+        this.hideLogin();
+        this.showUserBadge('employee', emp.name);
+        this.renderAll();
+        this.navigate('absensi');
+        this.showToast(`Selamat datang, ${emp.name}!`, 'success');
       },
 
-      skipLogin() {
-        this.isAdmin = false;
-        localStorage.removeItem('absensi_admin');
-        document.body.classList.remove('admin-logged-in');
-        this.hideLogin();
-        this.showToast('🔓 Mode terbatas (karyawan)', 'info');
-        if (this.currentSection === 'karyawan' || this.currentSection === 'rekap' || this.currentSection === 'settings') {
+      loginAdmin() {
+        const pwd = document.getElementById('adminPassword').value;
+        const adminPwd = this.adminPasswordHash || 'admin123';
+        if (pwd === adminPwd) {
+          this.isAdmin = true;
+          this.loggedInEmployee = null;
+          document.body.classList.add('admin-logged-in');
+          localStorage.setItem('absensi_session', JSON.stringify({ type:'admin' }));
+          this.hideLogin();
+          this.showUserBadge('admin');
+          this.renderAll();
           this.navigate('dashboard');
+          this.showToast('👑 Mode Admin aktif', 'success');
+        } else {
+          document.getElementById('adminLoginError').textContent = 'Password salah!';
         }
       },
 
       logout() {
         this.isAdmin = false;
-        localStorage.removeItem('absensi_admin');
+        this.loggedInEmployee = null;
         document.body.classList.remove('admin-logged-in');
-        document.getElementById('adminPanel').style.display = 'none';
-        this.showToast('👋 Logout admin', 'info');
+        localStorage.removeItem('absensi_session');
+        document.getElementById('userBadge').style.display = 'none';
+        document.getElementById('logoutBtn').style.display = 'none';
         document.getElementById('loginOverlay').style.display = 'flex';
-        document.getElementById('passwordInput').value = '';
-        document.getElementById('loginError').innerText = '';
-        if (this.currentSection === 'karyawan' || this.currentSection === 'rekap' || this.currentSection === 'settings') {
-          this.navigate('dashboard');
-        }
+        // Clear fields
+        document.getElementById('empUsername').value = '';
+        document.getElementById('empPassword').value = '';
+        document.getElementById('adminPassword').value = '';
+        document.getElementById('empLoginError').textContent = '';
+        document.getElementById('adminLoginError').textContent = '';
+        this.switchLoginTab('employee');
+        this.navigate('dashboard');
+        this.showToast('👋 Berhasil logout', 'info');
       },
 
       hideLogin() {
         document.getElementById('loginOverlay').style.display = 'none';
       },
 
-      navigate(section) {
-        if (!this.isAdmin && (section === 'karyawan' || section === 'rekap' || section === 'settings')) {
-          this.showToast('Hanya admin yang dapat mengakses', 'warning');
-          return;
+      showUserBadge(type, name) {
+        const badge = document.getElementById('userBadge');
+        const logoutBtn = document.getElementById('logoutBtn');
+        badge.style.display = 'flex';
+        logoutBtn.style.display = 'inline-flex';
+        if (type === 'admin') {
+          badge.className = 'user-badge admin';
+          badge.textContent = '👑 Admin';
+        } else {
+          badge.className = 'user-badge employee';
+          badge.textContent = '👤 ' + (name || 'Karyawan');
         }
-        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
-        document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-        document.getElementById('section-' + section).classList.add('active');
+      },
+
+      // ===== NAVIGATION =====
+      navigate(section) {
+        if (!this.isAdmin && (section==='karyawan'||section==='rekap'||section==='settings')) {
+          this.showToast('Akses khusus admin','warning'); return;
+        }
+        document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+        document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+        document.getElementById('section-'+section).classList.add('active');
         document.querySelector(`[data-nav="${section}"]`).classList.add('active');
         this.currentSection = section;
-
         const titles = {
-          dashboard: { title: '📊 Dashboard', sub: 'Ringkasan kehadiran hari ini' },
-          absensi: { title: '🕐 Absensi', sub: 'Clock-in & Clock-out' },
-          karyawan: { title: '👥 Karyawan', sub: 'Manajemen data karyawan' },
-          rekap: { title: '📋 Rekap Absensi', sub: 'Riwayat & laporan' },
-          settings: { title: '⚙️ Jam Kerja', sub: 'Atur jam masuk & toleransi' },
+          dashboard:{title:'📊 Dashboard',sub:'Ringkasan kehadiran hari ini'},
+          absensi:{title:'🕐 Absensi',sub:'Clock-in & Clock-out'},
+          karyawan:{title:'👥 Karyawan',sub:'Manajemen data karyawan'},
+          rekap:{title:'📋 Rekap Absensi',sub:'Riwayat & laporan'},
+          settings:{title:'⚙️ Pengaturan',sub:'Jam kerja & konfigurasi'},
         };
         document.getElementById('topbar-title').textContent = titles[section].title;
         document.getElementById('topbar-subtitle').textContent = titles[section].sub;
 
-        if (section === 'dashboard') this.renderDashboard();
-        if (section === 'absensi') this.renderAbsensi();
-        if (section === 'karyawan' && this.isAdmin) this.renderKaryawan();
-        if (section === 'rekap' && this.isAdmin) this.renderRekap();
-        if (section === 'settings' && this.isAdmin) this.renderSettings();
+        if (section==='dashboard') this.renderDashboard();
+        if (section==='absensi') this.renderAbsensi();
+        if (section==='karyawan'&&this.isAdmin) this.renderKaryawan();
+        if (section==='rekap'&&this.isAdmin) this.renderRekap();
+        if (section==='settings'&&this.isAdmin) this.renderSettings();
       },
 
       renderNav() {
@@ -903,7 +852,7 @@
 
       updateNavBadge() {
         const today = this.todayStr();
-        const hadir = this.attendance.filter(r => r.date === today && r.clockIn).length;
+        const hadir = this.attendance.filter(r=>r.date===today&&r.clockIn).length;
         const badge = document.getElementById('badge-absensi');
         if (badge) badge.textContent = hadir;
       },
@@ -911,52 +860,58 @@
       startClock() {
         const update = () => {
           const now = new Date();
-          const timeEl = document.getElementById('live-time');
-          const dateEl = document.getElementById('live-date');
-          if (timeEl) timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-          if (dateEl) dateEl.textContent = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+          const t = document.getElementById('live-time');
+          const d = document.getElementById('live-date');
+          if(t) t.textContent = now.toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit',second:'2-digit'});
+          if(d) d.textContent = now.toLocaleDateString('id-ID',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
         };
-        update(); setInterval(update, 1000);
+        update(); setInterval(update,1000);
       },
 
+      // ===== HELPERS =====
       todayStr() { return new Date().toISOString().split('T')[0]; },
-      formatTime(isoStr) { if (!isoStr) return '—'; return new Date(isoStr).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }); },
-      formatDate(dateStr) { if (!dateStr) return '—'; const d = new Date(dateStr + 'T00:00:00'); return d.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' }); },
+      formatTime(iso) { if(!iso)return'—'; return new Date(iso).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}); },
+      formatDate(ds) { if(!ds)return'—'; const d=new Date(ds+'T00:00:00'); return d.toLocaleDateString('id-ID',{weekday:'short',day:'numeric',month:'short',year:'numeric'}); },
+      getInitials(name) { return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); },
+      calcDuration(s,e) { const ms=new Date(e)-new Date(s); return `${Math.floor(ms/3600000)}j ${Math.floor((ms%3600000)/60000)}m`; },
 
-      getStatus(clockIn) {
-        if (!clockIn) return { label: 'Belum Absen', cls: 'badge-muted' };
+      // Get work schedule for specific employee
+      getEmpSchedule(empId) {
+        const emp = this.employees.find(e=>e.id===empId);
+        const ws = emp?.workStart || this.settings.workStart || '09:00';
+        const we = emp?.workEnd || this.settings.workEnd || '17:00';
+        const tol = (emp?.lateTolerance !== undefined && emp?.lateTolerance !== null && emp?.lateTolerance !== '') 
+                    ? parseInt(emp.lateTolerance) 
+                    : (this.settings.lateTolerance || 0);
+        return { workStart:ws, workEnd:we, lateTolerance:tol };
+      },
+
+      getStatus(clockIn, empId) {
+        if (!clockIn) return { label:'Belum Absen', cls:'badge-muted' };
         const d = new Date(clockIn);
-        const jam = d.getHours();
-        const menit = d.getMinutes();
-
-        const [workHour, workMinute] = this.settings.workStart.split(':').map(Number);
-        const tolerance = this.settings.lateTolerance || 0;
-
-        let batasJam = workHour;
-        let batasMenit = workMinute + tolerance;
-        if (batasMenit >= 60) {
-          batasJam += Math.floor(batasMenit / 60);
-          batasMenit %= 60;
-        }
-
-        if (jam < batasJam || (jam === batasJam && menit <= batasMenit)) {
-          return { label: '✓ Tepat Waktu', cls: 'badge-success' };
+        const jam = d.getHours(), menit = d.getMinutes();
+        const sched = this.getEmpSchedule(empId);
+        const [wh,wm] = sched.workStart.split(':').map(Number);
+        const tol = sched.lateTolerance || 0;
+        let batasJam=wh, batasMenit=wm+tol;
+        if(batasMenit>=60){batasJam+=Math.floor(batasMenit/60);batasMenit%=60;}
+        if(jam<batasJam||(jam===batasJam&&menit<=batasMenit)){
+          return{label:'✓ Tepat Waktu',cls:'badge-success'};
         } else {
-          return { label: '⚠ Terlambat', cls: 'badge-warning' };
+          return{label:'⚠ Terlambat',cls:'badge-warning'};
         }
       },
 
-      getInitials(name) { return name.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase(); },
-
+      // ===== DASHBOARD =====
       renderDashboard() {
         const today = this.todayStr();
+        const emps = this.isAdmin ? this.employees : (this.loggedInEmployee ? [this.loggedInEmployee] : []);
         const total = this.employees.length;
-        const todayRecords = this.attendance.filter(r => r.date === today);
-        const hadir = todayRecords.filter(r => r.clockIn).length;
-        const tepat = todayRecords.filter(r => {
-          if (!r.clockIn) return false;
-          const status = this.getStatus(r.clockIn);
-          return status.label.includes('Tepat');
+        const todayRecs = this.attendance.filter(r=>r.date===today);
+        const hadir = todayRecs.filter(r=>r.clockIn).length;
+        const tepat = todayRecs.filter(r=>{
+          if(!r.clockIn)return false;
+          return this.getStatus(r.clockIn, r.employeeId).label.includes('Tepat');
         }).length;
         const terlambat = hadir - tepat;
         const belum = total - hadir;
@@ -969,61 +924,71 @@
 
         const tbody = document.getElementById('dashboard-today-body');
         tbody.innerHTML = '';
-        if (this.employees.length === 0) {
-          tbody.innerHTML = `<tr><td colspan="5" class="td-muted" style="text-align:center;padding:30px">Belum ada karyawan</td></tr>`;
+        const displayEmps = this.isAdmin ? this.employees : (this.loggedInEmployee ? [this.loggedInEmployee] : []);
+        if (displayEmps.length===0) {
+          tbody.innerHTML = `<tr><td colspan="6" class="td-muted" style="text-align:center;padding:30px">Belum ada data</td></tr>`;
           return;
         }
-        this.employees.forEach(emp => {
-          const rec = todayRecords.find(r => r.employeeId === emp.id);
-          const status = this.getStatus(rec?.clockIn);
-          const duration = rec?.clockIn && rec?.clockOut ? this.calcDuration(rec.clockIn, rec.clockOut) : (rec?.clockIn ? '<span class="pulse" style="color:var(--success)">● Sedang Bekerja</span>' : '—');
+        displayEmps.forEach(emp => {
+          const rec = todayRecs.find(r=>r.employeeId===emp.id);
+          const status = this.getStatus(rec?.clockIn, emp.id);
+          const sched = this.getEmpSchedule(emp.id);
+          const duration = rec?.clockIn && rec?.clockOut ? this.calcDuration(rec.clockIn,rec.clockOut) : (rec?.clockIn?'<span class="pulse" style="color:var(--success)">● Bekerja</span>':'—');
           tbody.innerHTML += `<tr>
-            <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:34px;height:34px;font-size:13px">${this.getInitials(emp.name)}</div><div><div style="font-weight:600">${emp.name}</div><div class="td-muted">${emp.jabatan}</div></div></div></td>
-            <td>${rec?.clockIn ? this.formatTime(rec.clockIn) : '<span class="td-muted">—</span>'}</td>
-            <td>${rec?.clockOut ? this.formatTime(rec.clockOut) : '<span class="td-muted">—</span>'}</td>
+            <td><div style="display:flex;align-items:center;gap:10px"><div class="avatar" style="width:34px;height:34px;font-size:12px">${this.getInitials(emp.name)}</div><div><div style="font-weight:600">${emp.name}</div><div class="td-muted">${emp.jabatan}</div></div></div></td>
+            <td><span style="font-size:0.82rem;color:var(--primary);font-weight:500;">${sched.workStart} - ${sched.workEnd}</span></td>
+            <td>${rec?.clockIn?this.formatTime(rec.clockIn):'<span class="td-muted">—</span>'}</td>
+            <td>${rec?.clockOut?this.formatTime(rec.clockOut):'<span class="td-muted">—</span>'}</td>
             <td>${duration}</td>
             <td><span class="badge ${status.cls}">${status.label}</span></td>
           </tr>`;
         });
       },
 
-      calcDuration(start, end) { const ms = new Date(end)-new Date(start); return `${Math.floor(ms/3600000)}j ${Math.floor((ms%3600000)/60000)}m`; },
-
+      // ===== ABSENSI =====
       renderAbsensi() {
         const today = this.todayStr();
         const grid = document.getElementById('absensi-grid');
         grid.innerHTML = '';
-        if (this.employees.length === 0) {
-          grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👥</div><div class="empty-state-title">Belum Ada Karyawan</div><div class="empty-state-desc">Hubungi admin untuk menambahkan karyawan</div></div>`;
+
+        // Employee: only show their own card. Admin: show all.
+        const emps = this.isAdmin ? this.employees : (this.loggedInEmployee ? [this.loggedInEmployee] : []);
+
+        if (emps.length===0) {
+          grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-title">Tidak ada data</div><div class="empty-state-desc">Silakan login untuk melakukan absensi</div></div>`;
           return;
         }
-        this.employees.forEach(emp => {
-          const rec = this.attendance.find(r => r.date === today && r.employeeId === emp.id);
-          const status = this.getStatus(rec?.clockIn);
+
+        emps.forEach(emp => {
+          const rec = this.attendance.find(r=>r.date===today&&r.employeeId===emp.id);
+          const status = this.getStatus(rec?.clockIn, emp.id);
+          const sched = this.getEmpSchedule(emp.id);
           const hasClockedIn = !!rec?.clockIn;
           const hasClockedOut = !!rec?.clockOut;
-          const locationHtml = rec?.location ? `<div class="absensi-location"><span>📍</span> ${rec.location.address || `${rec.location.lat.toFixed(5)}, ${rec.location.lng.toFixed(5)}`}</div>` : '';
-          const jobdeskHtml = rec?.jobdesk ? `<div class="absensi-jobdesk"><div class="absensi-jobdesk-label">📋 Jobdesk</div>${rec.jobdesk}</div>` : '';
+          const locHtml = rec?.location ? `<div class="absensi-location"><span>📍</span> ${rec.location.address || `${rec.location.lat?.toFixed(5)}, ${rec.location.lng?.toFixed(5)}`}</div>` : '';
+          const jobHtml = rec?.jobdesk ? `<div class="absensi-jobdesk"><div class="absensi-jobdesk-label">📋 Jobdesk</div>${rec.jobdesk}</div>` : '';
           let actionBtn = '';
-          if (!hasClockedIn) {
-            actionBtn = `<button class="btn btn-success" style="flex:1" onclick="App.openClockInModal('${emp.id}')"><span>▶</span> Clock In</button>`;
-          } else if (!hasClockedOut) {
-            actionBtn = `<button class="btn btn-danger" style="flex:1" onclick="App.clockOut('${emp.id}')"><span>⏹</span> Clock Out</button>`;
-          } else {
-            actionBtn = `<button class="btn btn-outline" style="flex:1" disabled><span>✓</span> Selesai</button>`;
-          }
+          if (!hasClockedIn) actionBtn = `<button class="btn btn-success" style="flex:1" onclick="App.openClockInModal('${emp.id}')">▶ Clock In</button>`;
+          else if (!hasClockedOut) actionBtn = `<button class="btn btn-danger" style="flex:1" onclick="App.clockOut('${emp.id}')">⏹ Clock Out</button>`;
+          else actionBtn = `<button class="btn btn-outline" style="flex:1" disabled>✓ Selesai</button>`;
+
           grid.innerHTML += `<div class="absensi-card">
             <div class="absensi-card-header"><div class="avatar">${this.getInitials(emp.name)}</div><div style="flex:1"><div class="absensi-name">${emp.name}</div><div class="absensi-jabatan">${emp.jabatan}</div></div><span class="badge ${status.cls}">${status.label}</span></div>
+            <div class="absensi-schedule-info">🕐 Jam Kerja: ${sched.workStart} - ${sched.workEnd}${sched.lateTolerance>0?' (toleransi '+sched.lateTolerance+' menit)':''}</div>
             <div class="absensi-times"><div class="time-box"><div class="time-box-label">Clock In</div><div class="time-box-value ${!hasClockedIn?'empty':''}">${hasClockedIn?this.formatTime(rec.clockIn):'—'}</div></div><div class="time-box"><div class="time-box-label">Clock Out</div><div class="time-box-value ${!hasClockedOut?'empty':''}">${hasClockedOut?this.formatTime(rec.clockOut):'—'}</div></div></div>
-            ${locationHtml}${jobdeskHtml}
+            ${locHtml}${jobHtml}
             <div class="absensi-actions">${actionBtn}</div>
           </div>`;
         });
       },
 
       openClockInModal(empId) {
+        // Security: employee can only clock in for themselves
+        if (!this.isAdmin && this.loggedInEmployee && this.loggedInEmployee.id !== empId) {
+          this.showToast('Anda hanya bisa absen untuk diri sendiri!','error'); return;
+        }
         const emp = this.employees.find(e=>e.id===empId);
-        if (!emp) return;
+        if(!emp) return;
         document.getElementById('modal-clockin-name').textContent = emp.name;
         document.getElementById('modal-clockin-jabatan').textContent = emp.jabatan;
         document.getElementById('modal-clockin-avatar').textContent = this.getInitials(emp.name);
@@ -1035,37 +1000,31 @@
 
       currentLocation: null,
       getLocation() {
-        const statusEl = document.getElementById('location-status');
-        statusEl.className = 'location-status loading';
-        statusEl.innerHTML = '<span class="pulse">📡</span> Mengambil lokasi GPS...';
+        const el = document.getElementById('location-status');
+        el.className = 'location-status'; el.innerHTML = '<span class="pulse">📡</span> Mengambil lokasi GPS...';
         this.currentLocation = null;
-        if (!navigator.geolocation) {
-          statusEl.className = 'location-status error';
-          statusEl.innerHTML = '❌ Browser tidak mendukung geolocation';
-          return;
-        }
-        navigator.geolocation.getCurrentPosition(async (pos) => {
-          const lat = pos.coords.latitude, lng = pos.coords.longitude;
-          this.currentLocation = { lat, lng, address: null };
-          statusEl.className = 'location-status loading';
-          statusEl.innerHTML = '<span class="pulse">🔍</span> Mendapatkan alamat...';
+        if (!navigator.geolocation) { el.className='location-status error'; el.innerHTML='❌ Browser tidak mendukung GPS'; return; }
+        navigator.geolocation.getCurrentPosition(async pos => {
+          const lat=pos.coords.latitude, lng=pos.coords.longitude;
+          this.currentLocation = { lat, lng, address:null };
+          el.innerHTML = '<span class="pulse">🔍</span> Mendapatkan alamat...';
           try {
-            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`, { headers: { 'Accept-Language': 'id' } });
+            const res = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,{headers:{'Accept-Language':'id'}});
             const data = await res.json();
-            const address = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            this.currentLocation.address = address;
-            statusEl.className = 'location-status success';
-            statusEl.innerHTML = `📍 ${address.substring(0,80)}${address.length>80?'...':''}`;
+            const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            this.currentLocation.address = addr;
+            el.className='location-status success';
+            el.innerHTML = `📍 ${addr.substring(0,80)}${addr.length>80?'...':''}`;
           } catch {
             this.currentLocation.address = `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
-            statusEl.className = 'location-status success';
-            statusEl.innerHTML = `📍 Koordinat: ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+            el.className='location-status success';
+            el.innerHTML = `📍 ${lat.toFixed(5)}, ${lng.toFixed(5)}`;
           }
-        }, (err) => {
-          statusEl.className = 'location-status error';
-          const msgs = { 1:'Izin ditolak',2:'Tidak tersedia',3:'Timeout' };
-          statusEl.innerHTML = `❌ ${msgs[err.code]||'Gagal'}`;
-          this.currentLocation = { lat: null, lng: null, address: 'Lokasi tidak tersedia' };
+        }, err => {
+          el.className='location-status error';
+          const msgs={1:'Izin ditolak',2:'Tidak tersedia',3:'Timeout'};
+          el.innerHTML = `❌ ${msgs[err.code]||'Gagal'}`;
+          this.currentLocation = { lat:null, lng:null, address:'Lokasi tidak tersedia' };
         }, { timeout:10000, enableHighAccuracy:true });
       },
 
@@ -1073,174 +1032,274 @@
         const empId = document.getElementById('clockin-emp-id').value;
         const jobdesk = document.getElementById('clockin-jobdesk').value.trim();
         if (!jobdesk) { this.showToast('Jobdesk wajib diisi!','error'); return; }
+        // Security check
+        if (!this.isAdmin && this.loggedInEmployee && this.loggedInEmployee.id !== empId) {
+          this.showToast('Tidak diizinkan!','error'); return;
+        }
         const now = new Date().toISOString();
         const today = this.todayStr();
         const record = {
           id: Date.now().toString(),
-          employeeId: empId,
-          date: today,
-          clockIn: now,
-          clockOut: null,
-          jobdesk: jobdesk,
-          location: this.currentLocation || { address: 'Lokasi tidak diambil' },
+          employeeId: empId, date: today,
+          clockIn: now, clockOut: null,
+          jobdesk, location: this.currentLocation || { address:'Lokasi tidak diambil' },
         };
         try {
           await this.saveAttendance(record);
           this.closeModal('modal-clockin');
-          this.renderAbsensi();
-          this.updateNavBadge();
+          this.renderAbsensi(); this.renderDashboard(); this.updateNavBadge();
           const emp = this.employees.find(e=>e.id===empId);
           this.showToast(`✅ ${emp.name} Clock In ${this.formatTime(now)}`,'success');
-        } catch (e) {
-          this.showToast('Gagal menyimpan ke server','error');
-        }
+        } catch { this.showToast('Gagal menyimpan','error'); }
       },
 
       async clockOut(empId) {
+        // Security check
+        if (!this.isAdmin && this.loggedInEmployee && this.loggedInEmployee.id !== empId) {
+          this.showToast('Tidak diizinkan!','error'); return;
+        }
         const today = this.todayStr();
-        const rec = this.attendance.find(r=>r.date===today && r.employeeId===empId);
-        if (!rec) return;
+        const rec = this.attendance.find(r=>r.date===today&&r.employeeId===empId);
+        if(!rec) return;
         rec.clockOut = new Date().toISOString();
         try {
-          await this.updateAttendance(rec.id, { clockOut: rec.clockOut });
-          this.renderAbsensi();
-          this.renderDashboard();
+          await this.updateAttendance(rec.id, { clockOut:rec.clockOut });
+          this.renderAbsensi(); this.renderDashboard();
           const emp = this.employees.find(e=>e.id===empId);
-          const dur = this.calcDuration(rec.clockIn, rec.clockOut);
-          this.showToast(`👋 ${emp.name} Clock Out (${dur})`,'info');
-        } catch (e) {
-          this.showToast('Gagal update clock out','error');
-        }
+          this.showToast(`👋 ${emp.name} Clock Out (${this.calcDuration(rec.clockIn,rec.clockOut)})`,'info');
+        } catch { this.showToast('Gagal update','error'); }
       },
 
+      // ===== KARYAWAN MANAGEMENT =====
       renderKaryawan() {
-        if (!this.isAdmin) return;
+        if(!this.isAdmin) return;
         const grid = document.getElementById('karyawan-grid');
         grid.innerHTML = '';
-        if (this.employees.length === 0) {
-          grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-title">Belum Ada Karyawan</div><div class="empty-state-desc">Klik "Tambah Karyawan"</div></div>`;
+        if (this.employees.length===0) {
+          grid.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👤</div><div class="empty-state-title">Belum Ada Karyawan</div><div class="empty-state-desc">Klik "Tambah Karyawan" untuk menambahkan</div></div>`;
           return;
         }
         this.employees.forEach(emp => {
+          const sched = this.getEmpSchedule(emp.id);
           grid.innerHTML += `<div class="karyawan-card">
             <div class="avatar">${this.getInitials(emp.name)}</div>
             <div class="karyawan-info">
               <div class="karyawan-name">${emp.name}</div>
               <div class="karyawan-jabatan">${emp.jabatan}</div>
               <div class="karyawan-id">ID: ${emp.id}</div>
+              <div class="karyawan-schedule">🕐 ${sched.workStart} - ${sched.workEnd}</div>
+              <div class="karyawan-cred">👤 ${emp.username || '-'}</div>
             </div>
-            <button class="btn btn-outline btn-sm" onclick="App.deleteKaryawan('${emp.id}')" title="Hapus">🗑</button>
+            <div class="karyawan-actions">
+              <button class="btn btn-outline btn-sm" onclick="App.openEditKaryawan('${emp.id}')" title="Edit">✏️</button>
+              <button class="btn btn-outline btn-sm" onclick="App.deleteKaryawan('${emp.id}')" title="Hapus" style="color:var(--danger);border-color:var(--danger);">🗑</button>
+            </div>
           </div>`;
         });
       },
 
-      openAddKaryawan() { this.openModal('modal-karyawan'); },
+      openAddKaryawan() { 
+        document.getElementById('karyawan-name').value = '';
+        document.getElementById('karyawan-jabatan').value = '';
+        document.getElementById('karyawan-username').value = '';
+        document.getElementById('karyawan-password').value = '';
+        document.getElementById('karyawan-workstart').value = '';
+        document.getElementById('karyawan-workend').value = '';
+        this.openModal('modal-karyawan'); 
+      },
 
       async saveKaryawan() {
         const name = document.getElementById('karyawan-name').value.trim();
         const jabatan = document.getElementById('karyawan-jabatan').value.trim();
-        if (!name || !jabatan) { this.showToast('Nama & jabatan wajib','error'); return; }
+        const username = document.getElementById('karyawan-username').value.trim().toLowerCase();
+        const password = document.getElementById('karyawan-password').value;
+        const workStart = document.getElementById('karyawan-workstart').value || '';
+        const workEnd = document.getElementById('karyawan-workend').value || '';
+
+        if (!name||!jabatan) { this.showToast('Nama & jabatan wajib diisi','error'); return; }
+        if (!username||!password) { this.showToast('Username & password wajib diisi','error'); return; }
+        if (password.length<4) { this.showToast('Password minimal 4 karakter','error'); return; }
+        // Check username uniqueness
+        if (this.employees.some(e=>(e.username||'').toLowerCase()===username)) {
+          this.showToast('Username sudah digunakan!','error'); return;
+        }
+
         const emp = {
-          id: 'EMP' + Date.now(),
-          name,
-          jabatan,
+          id: 'EMP'+Date.now(),
+          name, jabatan, username, password,
+          workStart: workStart || null,
+          workEnd: workEnd || null,
+          lateTolerance: null,
           createdAt: new Date().toISOString(),
         };
         try {
           await this.saveEmployee(emp);
           this.closeModal('modal-karyawan');
-          this.renderKaryawan();
-          this.renderAbsensi();
-          this.renderDashboard();
-          this.showToast(`✅ Karyawan "${name}" ditambahkan`,'success');
-        } catch (e) {
-          this.showToast('Gagal simpan ke server','error');
+          this.renderKaryawan(); this.renderAbsensi(); this.renderDashboard(); this.renderSettings();
+          this.showToast(`✅ Karyawan "${name}" ditambahkan\nUsername: ${username}`,'success');
+        } catch { this.showToast('Gagal simpan','error'); }
+      },
+
+      openEditKaryawan(empId) {
+        const emp = this.employees.find(e=>e.id===empId);
+        if(!emp) return;
+        document.getElementById('edit-emp-id').value = empId;
+        document.getElementById('edit-karyawan-name').value = emp.name;
+        document.getElementById('edit-karyawan-jabatan').value = emp.jabatan;
+        document.getElementById('edit-karyawan-username').value = emp.username || '';
+        document.getElementById('edit-karyawan-password').value = '';
+        this.openModal('modal-edit-karyawan');
+      },
+
+      async updateKaryawan() {
+        const empId = document.getElementById('edit-emp-id').value;
+        const name = document.getElementById('edit-karyawan-name').value.trim();
+        const jabatan = document.getElementById('edit-karyawan-jabatan').value.trim();
+        const username = document.getElementById('edit-karyawan-username').value.trim().toLowerCase();
+        const password = document.getElementById('edit-karyawan-password').value;
+
+        if (!name||!jabatan) { this.showToast('Nama & jabatan wajib','error'); return; }
+        if (!username) { this.showToast('Username wajib','error'); return; }
+        // Check uniqueness (exclude self)
+        if (this.employees.some(e=>e.id!==empId&&(e.username||'').toLowerCase()===username)) {
+          this.showToast('Username sudah digunakan!','error'); return;
         }
+
+        const data = { name, jabatan, username };
+        if (password) {
+          if (password.length<4) { this.showToast('Password minimal 4 karakter','error'); return; }
+          data.password = password;
+        }
+        try {
+          await this.updateEmployee(empId, data);
+          this.closeModal('modal-edit-karyawan');
+          this.renderKaryawan(); this.renderAbsensi(); this.renderDashboard();
+          this.showToast(`✅ Data "${name}" diperbarui`,'success');
+        } catch { this.showToast('Gagal update','error'); }
       },
 
       async deleteKaryawan(empId) {
         const emp = this.employees.find(e=>e.id===empId);
-        if (!emp || !confirm(`Hapus "${emp.name}"? Data absensi terkait juga dihapus.`)) return;
+        if (!emp||!confirm(`Hapus "${emp.name}"?\nData absensi juga akan dihapus.`)) return;
         try {
           await this.deleteEmployee(empId);
-          this.renderKaryawan();
-          this.renderAbsensi();
-          this.renderDashboard();
-          this.showToast(`🗑 Karyawan "${emp.name}" dihapus`,'warning');
-        } catch (e) {
-          this.showToast('Gagal hapus','error');
-        }
+          this.renderKaryawan(); this.renderAbsensi(); this.renderDashboard(); this.renderSettings();
+          this.showToast(`🗑 "${emp.name}" dihapus`,'warning');
+        } catch { this.showToast('Gagal hapus','error'); }
       },
 
+      // ===== SETTINGS =====
       renderSettings() {
-        if (!this.isAdmin) return;
-        document.getElementById('workStart').value = this.settings.workStart;
-        document.getElementById('workEnd').value = this.settings.workEnd;
-        document.getElementById('lateTolerance').value = this.settings.lateTolerance;
-      },
+        if(!this.isAdmin) return;
+        document.getElementById('workStart').value = this.settings.workStart || '09:00';
+        document.getElementById('workEnd').value = this.settings.workEnd || '17:00';
+        document.getElementById('lateTolerance').value = this.settings.lateTolerance || 0;
 
-      async saveSettings() {
-        const workStart = document.getElementById('workStart').value;
-        const workEnd = document.getElementById('workEnd').value;
-        const lateTolerance = parseInt(document.getElementById('lateTolerance').value, 10) || 0;
-
-        if (!workStart || !workEnd) {
-          this.showToast('Jam kerja harus diisi', 'error');
+        // Render per-employee schedule
+        const list = document.getElementById('emp-schedule-list');
+        list.innerHTML = '';
+        if (this.employees.length===0) {
+          list.innerHTML = '<p style="color:var(--text-muted);font-size:0.9rem;text-align:center;padding:1rem;">Belum ada karyawan</p>';
           return;
         }
-
-        const newSettings = { workStart, workEnd, lateTolerance };
-        try {
-          await this.saveSettings(newSettings);
-          this.showToast('✅ Pengaturan jam kerja disimpan', 'success');
-          this.renderDashboard();
-          this.renderAbsensi();
-          if (this.currentSection === 'rekap') this.renderRekap();
-        } catch (e) {
-          this.showToast('Gagal simpan','error');
-        }
+        this.employees.forEach(emp => {
+          const sched = this.getEmpSchedule(emp.id);
+          list.innerHTML += `<div class="emp-schedule-item">
+            <div class="avatar" style="width:36px;height:36px;font-size:0.75rem;">${this.getInitials(emp.name)}</div>
+            <div class="emp-info"><div class="name">${emp.name}</div><div class="jabatan">${emp.jabatan}</div></div>
+            <div class="schedule-inputs">
+              <label>Masuk</label>
+              <input type="time" id="sched-start-${emp.id}" value="${emp.workStart||''}" placeholder="Default">
+              <label>Pulang</label>
+              <input type="time" id="sched-end-${emp.id}" value="${emp.workEnd||''}" placeholder="Default">
+              <label>Toleransi</label>
+              <input type="number" id="sched-tol-${emp.id}" value="${emp.lateTolerance!==null&&emp.lateTolerance!==undefined?emp.lateTolerance:''}" placeholder="Def" min="0" max="120" style="width:60px;">
+            </div>
+          </div>`;
+        });
       },
 
+      async saveGlobalSettings() {
+        const workStart = document.getElementById('workStart').value;
+        const workEnd = document.getElementById('workEnd').value;
+        const lateTolerance = parseInt(document.getElementById('lateTolerance').value,10)||0;
+        if(!workStart||!workEnd){this.showToast('Jam kerja harus diisi','error');return;}
+        try {
+          await this.saveSettingsToFirestore({ workStart, workEnd, lateTolerance });
+          this.showToast('✅ Jam kerja default disimpan','success');
+          this.renderDashboard(); this.renderAbsensi();
+        } catch { this.showToast('Gagal simpan','error'); }
+      },
+
+      async saveAllSchedules() {
+        try {
+          for (const emp of this.employees) {
+            const ws = document.getElementById(`sched-start-${emp.id}`)?.value || '';
+            const we = document.getElementById(`sched-end-${emp.id}`)?.value || '';
+            const tolVal = document.getElementById(`sched-tol-${emp.id}`)?.value;
+            const tol = tolVal !== '' && tolVal !== undefined ? parseInt(tolVal,10) : null;
+            await this.updateEmployee(emp.id, {
+              workStart: ws || null,
+              workEnd: we || null,
+              lateTolerance: tol
+            });
+          }
+          this.showToast('✅ Jam kerja semua karyawan disimpan','success');
+          this.renderDashboard(); this.renderAbsensi(); this.renderKaryawan();
+        } catch(e) { console.error(e); this.showToast('Gagal simpan','error'); }
+      },
+
+      async changeAdminPassword() {
+        const newPwd = document.getElementById('newAdminPassword').value;
+        if (!newPwd || newPwd.length<4) { this.showToast('Password minimal 4 karakter','error'); return; }
+        try {
+          await this.saveSettingsToFirestore({ adminPassword: newPwd });
+          this.adminPasswordHash = newPwd;
+          document.getElementById('newAdminPassword').value = '';
+          this.showToast('✅ Password admin berhasil diubah','success');
+        } catch { this.showToast('Gagal simpan','error'); }
+      },
+
+      // ===== REKAP =====
       renderRekap() {
-        if (!this.isAdmin) return;
-        const filterEmp = document.getElementById('filter-emp')?.value || '';
-        const filterDate = document.getElementById('filter-date')?.value || '';
-        const filterStatus = document.getElementById('filter-status')?.value || '';
+        if(!this.isAdmin) return;
+        const filterEmp = document.getElementById('filter-emp')?.value||'';
+        const filterDate = document.getElementById('filter-date')?.value||'';
+        const filterStatus = document.getElementById('filter-status')?.value||'';
 
         const filterEmpEl = document.getElementById('filter-emp');
         if (filterEmpEl) {
-          const current = filterEmpEl.value;
+          const cur = filterEmpEl.value;
           filterEmpEl.innerHTML = '<option value="">Semua Karyawan</option>';
-          this.employees.forEach(emp => filterEmpEl.innerHTML += `<option value="${emp.id}" ${current===emp.id?'selected':''}>${emp.name}</option>`);
+          this.employees.forEach(emp => filterEmpEl.innerHTML += `<option value="${emp.id}" ${cur===emp.id?'selected':''}>${emp.name}</option>`);
         }
 
         let records = [...this.attendance];
-        if (filterEmp) records = records.filter(r=>r.employeeId===filterEmp);
-        if (filterDate) records = records.filter(r=>r.date===filterDate);
-        if (filterStatus==='tepat') records = records.filter(r=>{ if(!r.clockIn)return false; return this.getStatus(r.clockIn).label.includes('Tepat'); });
-        if (filterStatus==='terlambat') records = records.filter(r=>{ if(!r.clockIn)return false; return this.getStatus(r.clockIn).label.includes('Terlambat'); });
-        if (filterStatus==='belum') records = records.filter(r=>!r.clockIn);
+        if(filterEmp) records=records.filter(r=>r.employeeId===filterEmp);
+        if(filterDate) records=records.filter(r=>r.date===filterDate);
+        if(filterStatus==='tepat') records=records.filter(r=>{if(!r.clockIn)return false;return this.getStatus(r.clockIn,r.employeeId).label.includes('Tepat');});
+        if(filterStatus==='terlambat') records=records.filter(r=>{if(!r.clockIn)return false;return this.getStatus(r.clockIn,r.employeeId).label.includes('Terlambat');});
+        if(filterStatus==='belum') records=records.filter(r=>!r.clockIn);
         records.sort((a,b)=>new Date(b.date)-new Date(a.date)||new Date(b.clockIn||0)-new Date(a.clockIn||0));
 
         const tbody = document.getElementById('rekap-body');
         tbody.innerHTML = '';
-        if (records.length===0) {
-          tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data</td></tr>`;
-          return;
-        }
+        if(records.length===0){tbody.innerHTML=`<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text-muted)">Tidak ada data</td></tr>`;document.getElementById('rekap-count').textContent='0 data';return;}
         records.forEach(rec=>{
           const emp = this.employees.find(e=>e.id===rec.employeeId);
-          const status = this.getStatus(rec.clockIn);
-          const duration = rec.clockIn && rec.clockOut ? this.calcDuration(rec.clockIn,rec.clockOut) : (rec.clockIn?'—':'—');
+          const status = this.getStatus(rec.clockIn, rec.employeeId);
+          const sched = this.getEmpSchedule(rec.employeeId);
+          const duration = rec.clockIn&&rec.clockOut ? this.calcDuration(rec.clockIn,rec.clockOut) : '—';
           const locText = rec.location?.address || (rec.location?.lat?`${rec.location.lat.toFixed(4)}, ${rec.location.lng.toFixed(4)}`:'—');
           tbody.innerHTML += `<tr>
-            <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:30px;height:30px;font-size:11px">${emp?this.getInitials(emp.name):'?'}</div><div><div style="font-weight:600;font-size:13px">${emp?.name||'Tidak diketahui'}</div><div class="td-muted">${emp?.jabatan||''}</div></div></div></td>
+            <td><div style="display:flex;align-items:center;gap:8px"><div class="avatar" style="width:30px;height:30px;font-size:11px">${emp?this.getInitials(emp.name):'?'}</div><div><div style="font-weight:600;font-size:13px">${emp?.name||'?'}</div><div class="td-muted">${emp?.jabatan||''}</div></div></div></td>
             <td><span style="font-weight:500">${this.formatDate(rec.date)}</span></td>
+            <td><span style="font-size:0.8rem;color:var(--primary);">${sched.workStart}-${sched.workEnd}</span></td>
             <td style="color:var(--success)">${this.formatTime(rec.clockIn)}</td>
             <td style="color:var(--danger)">${this.formatTime(rec.clockOut)}</td>
             <td class="td-muted">${duration}</td>
-            <td><div style="max-width:200px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${locText}">📍 ${locText}</div></td>
-            <td><div style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${rec.jobdesk||''}">${rec.jobdesk||'<span class="td-muted">—</span>'}</div></td>
+            <td><div style="max-width:180px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${locText}">📍 ${locText}</div></td>
+            <td><div style="max-width:160px;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${rec.jobdesk||''}">${rec.jobdesk||'—'}</div></td>
             <td><span class="badge ${status.cls}">${status.label}</span></td>
           </tr>`;
         });
@@ -1248,40 +1307,42 @@
       },
 
       exportCSV() {
-        if (!this.isAdmin) { this.showToast('Hanya admin','warning'); return; }
-        const records = [...this.attendance].sort((a,b)=>new Date(b.date)-new Date(a.date));
-        if (records.length===0) { this.showToast('Tidak ada data','warning'); return; }
-        const headers = ['Nama','Jabatan','ID Karyawan','Tanggal','Clock In','Clock Out','Durasi','Status','Lokasi','Jobdesk'];
-        const rows = records.map(rec=>{
-          const emp = this.employees.find(e=>e.id===rec.employeeId);
-          const status = this.getStatus(rec.clockIn);
-          const duration = rec.clockIn&&rec.clockOut?this.calcDuration(rec.clockIn,rec.clockOut):'';
-          const loc = rec.location?.address || (rec.location?.lat?`${rec.location.lat}, ${rec.location.lng}`:'');
-          return [emp?.name||'', emp?.jabatan||'', rec.employeeId, rec.date, this.formatTime(rec.clockIn), this.formatTime(rec.clockOut), duration, status.label.replace(/[✓⚠]/g,'').trim(), loc, rec.jobdesk||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
+        if(!this.isAdmin){this.showToast('Hanya admin','warning');return;}
+        const records=[...this.attendance].sort((a,b)=>new Date(b.date)-new Date(a.date));
+        if(records.length===0){this.showToast('Tidak ada data','warning');return;}
+        const headers=['Nama','Jabatan','ID','Tanggal','Jam Masuk Setting','Clock In','Clock Out','Durasi','Status','Lokasi','Jobdesk'];
+        const rows=records.map(rec=>{
+          const emp=this.employees.find(e=>e.id===rec.employeeId);
+          const status=this.getStatus(rec.clockIn,rec.employeeId);
+          const sched=this.getEmpSchedule(rec.employeeId);
+          const duration=rec.clockIn&&rec.clockOut?this.calcDuration(rec.clockIn,rec.clockOut):'';
+          const loc=rec.location?.address||(rec.location?.lat?`${rec.location.lat},${rec.location.lng}`:'');
+          return[emp?.name||'',emp?.jabatan||'',rec.employeeId,rec.date,`${sched.workStart}-${sched.workEnd}`,this.formatTime(rec.clockIn),this.formatTime(rec.clockOut),duration,status.label.replace(/[✓⚠]/g,'').trim(),loc,rec.jobdesk||''].map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',');
         });
-        const csv = '\uFEFF'+[headers.join(','),...rows].join('\n');
-        const blob = new Blob([csv],{type:'text/csv;charset=utf-8;'});
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = `Rekap_Absensi_${this.todayStr()}.csv`; a.click();
+        const csv='\uFEFF'+[headers.join(','),...rows].join('\n');
+        const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');
+        a.href=url;a.download=`Rekap_Absensi_${this.todayStr()}.csv`;a.click();
         URL.revokeObjectURL(url);
         this.showToast('✅ CSV diunduh','success');
       },
 
+      // ===== MODALS & TOAST =====
       openModal(id) { document.getElementById(id).classList.add('open'); },
       closeModal(id) { document.getElementById(id).classList.remove('open'); },
-      showToast(msg, type='info') {
-        const container = document.getElementById('toast-container');
-        const toast = document.createElement('div');
-        toast.className = `toast ${type}`;
+      showToast(msg,type='info') {
+        const c=document.getElementById('toast-container');
+        const t=document.createElement('div');
+        t.className=`toast ${type}`;
         const icons={success:'✅',error:'❌',warning:'⚠️',info:'ℹ️'};
-        toast.innerHTML = `<span>${icons[type]||''}</span><span>${msg}</span>`;
-        container.appendChild(toast);
-        setTimeout(()=>{ toast.style.animation='fadeOut 0.3s ease forwards'; setTimeout(()=>toast.remove(),300); },3500);
+        t.innerHTML=`<span>${icons[type]||''}</span><span>${msg}</span>`;
+        c.appendChild(t);
+        setTimeout(()=>{t.style.animation='fadeOut 0.3s ease forwards';setTimeout(()=>t.remove(),300);},3500);
       }
     };
 
-    document.addEventListener('DOMContentLoaded', ()=>App.init());
+    document.addEventListener('DOMContentLoaded',()=>App.init());
     window.App = App;
   </script>
 </body>
